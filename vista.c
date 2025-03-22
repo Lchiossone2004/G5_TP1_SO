@@ -31,14 +31,14 @@ int main() {
     while(!state_map->game_ended){
         clearScreen();
         sem_wait(&sync_map->A);
-        for(int i = 0; i < state_map->board_with; i++){
-            for(int j = 0; j <state_map->board_height; j++){
-                aux = state_map->board_origin[i+j*state_map->board_with];
+        for(int fil = 0; fil < state_map->board_height; fil++){
+            for(int col = 0; col <state_map->board_with; col++){
+                aux = state_map->board_origin[col+fil*state_map->board_with];
                 if(aux == 0){
-                    printf("\033[41m[%d]\033[0m",aux);
+                    printf("\033[41m[%2d]\033[0m",aux);
                 }
                 else{
-                printf("[%d]",aux);
+                printf("[%2d]",aux);
                 }
          }
          printf("\n");
