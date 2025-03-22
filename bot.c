@@ -30,25 +30,25 @@ int main(int argc, char *argv[]){
     unsigned char direction;
     unsigned int x,y;
     for(int i = 0; i < 2; i++){
-        sem_wait(&sync_map->C);
-        sem_wait(&sync_map->E);
-        sync_map->F++;
-        if(sync_map->F == 1){
-            sem_wait(&sync_map->D);
+        sem_wait(&sync_map->C);         //Mutex of master
+        sem_wait(&sync_map->E);         //Mutex of other bots
+        sync_map->F++;                  //Increments the amount of readers
+        if(sync_map->F == 1){           //Checks if he is the first reading 
+            sem_wait(&sync_map->D);     //Mutex the game stat
         }
-        sem_post(&sync_map->E);
-        sem_post(&sync_map->C);
+        sem_post(&sync_map->E);         //Frees other bots
+      
         direction = CheckSurroundings(state_map);     
         if(write(1, &direction, sizeof(direction)) == -1){  //Writes in the pipe o fd 1 (given by the master)
            perror("Failed to write on pipe 7\n");
         }
-        sem_wait(&sync_map->E);
-        sync_map->F--;
+        sem_wait(&sync_map->E);         //Mutex of other bots
+        sync_map->F--;                  //Substracs form the reader list
         if(sync_map->F == 0){
-            sem_post(&sync_map->D);
+            sem_post(&sync_map->D);     //If he is the last one it frees the game state
         }
-        sem_post(&sync_map->E);
-        sem_post(&sync_map->C);
+        sem_post(&sync_map->E);         //Frees other bots
+        sem_post(&sync_map->C);         //Frees the master 
     }
     return 0;
 }
