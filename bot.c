@@ -8,7 +8,7 @@
 #include "./structs.h"
 
 unsigned char CheckSurroundings(GameState *state_map);      // Checks the surroundings of the bot to see the highest value tile to jump
-int inBounds(int totalPosition, GameState *state_map);      // Checks the position the algorithm is using is valid
+int inBounds(int x, int y, GameState *state_map);      // Checks the position the algorithm is using is valid
 int selectDir(int x, int y);                                // Selects the direction to go  
 
 int main(int argc, char *argv[]){
@@ -28,30 +28,46 @@ int main(int argc, char *argv[]){
     GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ | PROT_WRITE, MAP_SHARED, sync_fd,0);
 
     unsigned char direction;
-
-    for(int i = 0; i < 5; i++){
+    unsigned int x,y;
+    for(int i = 0; i < 2; i++){
+        sem_wait(&sync_map->C);         //Mutex of master
+        sem_wait(&sync_map->E);         //Mutex of other bots
+        sync_map->F++;                  //Increments the amount of readers
+        if(sync_map->F == 1){           //Checks if he is the first reading 
+            sem_wait(&sync_map->D);     //Mutex the game stat
+        }
+        sem_post(&sync_map->E);         //Frees other bots
+      
         direction = CheckSurroundings(state_map);     
         if(write(1, &direction, sizeof(direction)) == -1){  //Writes in the pipe o fd 1 (given by the master)
-            perror("Failed to write on pipe 7\n");
+           perror("Failed to write on pipe 7\n");
         }
-        sem_post(&sync_map->C); // Changes the semaphore to tell the master that it can read.
-
+        sem_wait(&sync_map->E);         //Mutex of other bots
+        sync_map->F--;                  //Substracs form the reader list
+        if(sync_map->F == 0){
+            sem_post(&sync_map->D);     //If he is the last one it frees the game state
+        }
+        sem_post(&sync_map->E);         //Frees other bots
+        sem_post(&sync_map->C);         //Frees the master 
     }
     return 0;
 }
 
 unsigned char CheckSurroundings(GameState *state_map){
-    unsigned char toRet = 0;
+    int toRet = -1;
     int aux;
     unsigned int x,y;
+    int actual = 0;
     x = state_map->players_list[0].pos_x;
     y = state_map->players_list[0].pos_y;
-    for(int i = -1 ; i <= 1 ; i++){
-        for(int j = -1; j<= 1; j++){
-            if( i != 0 && j != 0){
-                aux = state_map->board_origin[(x+i) + state_map->board_with*(y+j)];
-                if(inBounds(aux,state_map) && state_map->board_origin[aux] > 1 && state_map->board_origin[aux] > toRet){
-                    toRet = selectDir(i,j);
+
+    for(int fil = -1 ; fil <= 1 ; fil++){
+        for(int col = -1; col<= 1; col++){
+            if((fil != 0 || col != 0 ) && inBounds(fil + y,col + x,state_map)){
+                aux = state_map->board_origin[(x+col) + state_map->board_with*(y+fil)];
+                if(aux > actual ){
+                    toRet = selectDir(fil,col);
+                    actual = state_map->board_origin[(x+col) + state_map->board_with*(y+fil)];
                 }
             }
         }
@@ -59,41 +75,18 @@ unsigned char CheckSurroundings(GameState *state_map){
     return toRet;
 }
 
-int inBounds(int totalPosition, GameState *state_map){
-    return totalPosition <= state_map->board_height*state_map->board_with && totalPosition >= 0;
+int inBounds(int y, int x, GameState *state_map) {
+    // Verifica si las coordenadas están dentro de los límites del tablero
+    return x >= 0 && x < state_map->board_with &&
+           y >= 0 && y < state_map->board_height;
 }
 
-int selectDir(int i, int j){
-    if(i == -1){
-        if(j == -1){
-            return 7;
-        }
-        if( j == 0){
-            return 6;
-        }
-        if( j == 1){
-            return 5;
-        }
-    }
-    if(i ==0){
-        if(j == -1){
-            return 0;
-        }
-        if( j == 1){
-            return 4;
-        }
-    }
-    if(i == 1){
-        if(j == -1){
-            return 1;
-        }
-        if( j == 0){
-            return 2;
-        }
-        if( j == 1){
-            return 3;
-        }
-    }
-    return -1;
-
+int selectDir(int i, int j) {
+    // Mapea los desplazamientos (i, j) a las direcciones: 0 = arriba, 1 = derecha-arriba, 2 = derecha, etc.
+    static const int directions[3][3] = {
+        {7, 0, 1},
+        {6, -1, 2},
+        {5, 4, 3}
+    };
+    return directions[i + 1][j + 1]; // El índice +1 es para manejar los índices negativos
 }
