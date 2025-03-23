@@ -7,7 +7,7 @@
 #include <stdbool.h>    // For bool
 #include "./structs.h"
 
-unsigned char CheckSurroundings(GameState *state_map);      // Checks the surroundings of the bot to see the highest value tile to jump
+unsigned char CheckSurroundings(GameState *state_map, int playerNumber);      // Checks the surroundings of the bot to see the highest value tile to jump
 int inBounds(int x, int y, GameState *state_map);      // Checks the position the algorithm is using is valid
 int selectDir(int x, int y);                                // Selects the direction to go  
 
@@ -27,8 +27,13 @@ int main(int argc, char *argv[]){
     }
     GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ | PROT_WRITE, MAP_SHARED, sync_fd,0);
 
+    int playerNumber = 0;
+    pid_t pid = getpid();
+    while(playerNumber< 9 && state_map->players_list[playerNumber].player_pid != pid){
+        playerNumber++;
+    }
+
     unsigned char direction;
-    unsigned int x,y;
     for(int i = 0; i < 2; i++){
         sem_wait(&sync_map->C);         //Mutex of master
         sem_wait(&sync_map->E);         //Mutex of other bots
@@ -38,7 +43,7 @@ int main(int argc, char *argv[]){
         }
         sem_post(&sync_map->E);         //Frees other bots
       
-        direction = CheckSurroundings(state_map);     
+        direction = CheckSurroundings(state_map,playerNumber);     
         if(write(1, &direction, sizeof(direction)) == -1){  //Writes in the pipe o fd 1 (given by the master)
            perror("Failed to write on pipe 7\n");
         }
@@ -50,16 +55,29 @@ int main(int argc, char *argv[]){
         sem_post(&sync_map->E);         //Frees other bots
         sem_post(&sync_map->C);         //Frees the master 
     }
+    //Cleaning
+    if(munmap(state_map,sizeof(GameState)) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(munmap(sync_map,sizeof(GameSync)) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(close(state_fd) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(close(sync_fd) == -1){
+        perror("Error unmaping the memory\n");
+    }
     return 0;
 }
 
-unsigned char CheckSurroundings(GameState *state_map){
-    int toRet = -1;
+unsigned char CheckSurroundings(GameState *state_map, int playerNumber){
+    int toRet = 0;
     int aux;
     unsigned int x,y;
     int actual = 0;
-    x = state_map->players_list[0].pos_x;
-    y = state_map->players_list[0].pos_y;
+    x = state_map->players_list[playerNumber].pos_x;
+    y = state_map->players_list[playerNumber].pos_y;
 
     for(int fil = -1 ; fil <= 1 ; fil++){
         for(int col = -1; col<= 1; col++){
