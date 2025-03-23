@@ -10,7 +10,7 @@ typedef struct{
     unsigned int valid_moves;       // Number of requests for valid movements done
     unsigned short pos_x, pos_y;    // x,y coordinates on the bard
     pid_t player_pid;               // Process identifier
-    bool can_move;                  // Indicates if the player has valid moves remaining
+    bool is_blocked;                  // Indicates if the player is blocked
 } PlayerState;
 
 typedef struct{
