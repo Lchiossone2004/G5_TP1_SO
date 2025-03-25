@@ -58,7 +58,7 @@ int main(int argc, char *argv[]){
         if(write(1, &direction, sizeof(direction)) == -1){  //Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
          }
-        sleep(3);
+        sleep(1.5);
     }
     //Cleaning
     if(munmap(state_map,sizeof(GameState)) == -1){

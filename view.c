@@ -37,8 +37,8 @@ int main(int argc, char * argv[]) {
     while(!state_map->game_ended){
         clearScreen();
         sem_wait(&sync_map->A);                             //Tells master its going to print
-        for(int row = 0; row < 10; row++){             //Rows
-            for(int col = 0; col < 10; col++){            //Collums
+        for(int row = 0; row < height; row++){             //Rows
+            for(int col = 0; col < width; col++){            //Collums
                 aux = state_map->board_origin[col+row*width];
                 if(aux <= 0){
                     for(int i = 0; i < state_map->num_of_players && !found; i++){
