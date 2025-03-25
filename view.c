@@ -9,7 +9,10 @@
 #include <time.h>
 
 void clearScreen();
-int main() {
+int main(int argc, char * argv[]) {
+
+    int width = atoi(argv[1]);          //Playing board width
+    int height = atoi(argv[2]);         //Playing board height
 
     int state_fd = shm_open("/game_state", O_RDONLY,0666);  //Opens and maps the "game_state" shared memmory
     if(state_fd == -1){
@@ -24,25 +27,34 @@ int main() {
         exit(EXIT_FAILURE);
     }
     GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ | PROT_WRITE, MAP_SHARED, sync_fd,0);
-    int colors[9] = {41,42,43,44,45,46,47,100,101};         //Colors for the players
+
+
+    int colors[] = {100, 102, 103, 104, 105, 106, 107, 100, 41};
+    
     int aux;                                                //To store what is i the cell
     int found = 0;                                          //If teh player to be printed is found 
+
     while(!state_map->game_ended){
         clearScreen();
         sem_wait(&sync_map->A);                             //Tells master its going to print
-        for(int row = 0; row < state_map->board_height; row++){             //Rows
-            for(int col = 0; col <state_map->board_with; col++){            //Collums
-                aux = state_map->board_origin[col+row*state_map->board_with];
+        for(int row = 0; row < 10; row++){             //Rows
+            for(int col = 0; col < 10; col++){            //Collums
+                aux = state_map->board_origin[col+row*width];
                 if(aux <= 0){
                     for(int i = 0; i < state_map->num_of_players && !found; i++){
                         if(aux == i*(-1)){
-                            printf("\033[%dm[%2d]\033[0m",colors[i],aux);       //Prints the player in color 
+                            if(col == state_map->players_list[i].pos_x && row == state_map->players_list[i].pos_y){
+                                printf("\033[%dm[*%2d*]\033[0m",colors[i],aux);       //Prints the player in color 
+                            }
+                            else{
+                                printf("\033[%dm[ %2d ]\033[0m",colors[i],aux);       //Prints the player in color 
+                            }
                             found = 1;
                         }
                     }
                 }
                 else{
-                printf("[%2d]",aux);
+                printf("[ %2d ]",aux);
                 }
                 found = 0;
         }
@@ -51,58 +63,24 @@ int main() {
     for(int i = 0; i < state_map->num_of_players; i++){
         printf("\033[%dm  \033[0m ",colors[i]);                                 //Prints the color of the plyer 
         printf("Player: %s | ", state_map->players_list[i].player_name);        //Prints player name
-        printf("Score: %d\n", state_map->players_list[i].score);                //Prints player score
+        printf("Score: %d | ", state_map->players_list[i].score);                //Prints player score
+        printf("Coordinates(x,y): (%d,%d)\n",state_map->players_list[i].pos_x,state_map->players_list[i].pos_y);
     }
         sem_post(&sync_map->B);                             //Tells master it finished printing 
     }
-
-
-    // clearScreen();
-    // srand(time(NULL));
-    // int rowas = 10;
-    // int columnas = 10;
-    // int random1;
-    // int random2;
-    // int timeOfTimer = 2;
-    // time_t start, now;
-    // time(&start);
-    // char *table[rowas][columnas];
-    // int coloredMatrix[rowas][columnas];
-    // for(int i = 0; i <rowas; i++){
-    //     for(int j = 0; j <columnas; j++){
-    //         random1 = rand() % 10 + 1;
-    //         table[i][j] = malloc(20);
-    //         coloredMatrix[i][j] = 0;
-    //         snprintf(table[i][j], 20, "[%2d]",random1);
-    //     }
-    // }
-    // while (timeOfTimer) {
-    //     random1 = rand() %10;
-    //     random2 = rand() %10;
-    //     time(&now);
-    //     printf("Timer: %d\n", timeOfTimer);
-    //     if(difftime(now,start) >=1){
-    //         start = now;
-    //         timeOfTimer--;
-    //     }
-    //     if(coloredMatrix[random1][random2] == 0){
-    //         coloredMatrix[random1][random2] = 1;
-    //         char aux[20];
-    //         strcpy(aux, table[random1][random2]);
-    //         snprintf(table[random1][random2],30, "\033[41m%s\033[0m",aux);
-    //         drawBoard(rowas,columnas,table);
-    //         usleep(500000);
-    //     }
-    //     clearScreen();
-    // }
-    // printf("Game ended\n");
-    // usleep(1000000);
-    // clearScreen();
-    // for(int i = 0; i<rowas; i++){
-    //     for(int j = 0; j < columnas; j++){
-    //         free(table[i][j]);
-    //     }
-    // }
+        //Cleaning
+    if(munmap(state_map,sizeof(GameState)) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(munmap(sync_map,sizeof(GameSync)) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(close(state_fd) == -1){
+        perror("Error unmaping the memory\n");
+    }
+    if(close(sync_fd) == -1){
+        perror("Error unmaping the memory\n");
+    }
     return 0;
 }
 

@@ -14,7 +14,7 @@ typedef struct{
 } PlayerState;
 
 typedef struct{
-    unsigned short board_with;      // Board with
+    unsigned short board_width;      // Board with
     unsigned short board_height;    // Board height
     unsigned int num_of_players;    // Number of players
     PlayerState players_list[9];    // List of players
