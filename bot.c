@@ -21,7 +21,7 @@ int main(int argc, char *argv[]){
         perror("Game State shared memmor fail.\n");
         exit(EXIT_FAILURE);
     }
-    GameState *state_map = mmap(NULL, sizeof(GameState), PROT_READ, MAP_SHARED, state_fd,0);
+    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ, MAP_SHARED, state_fd,0);
 
     int sync_fd = shm_open("/game_sync", O_RDWR,0666);      //Opens and maps the "game_state" shared memmory
     if(sync_fd == -1){

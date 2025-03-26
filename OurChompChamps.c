@@ -7,7 +7,8 @@
 #include <stdbool.h>    // For bool
 #include "./structs.h"
 #include <time.h>
-
+#define GAME_MEM "/game_state"
+#define SYNC_MEM "/game_sync"
 
 int main(int argc, char * argv[]) {
     int width=10;
@@ -69,4 +70,35 @@ int main(int argc, char * argv[]) {
             exit(EXIT_FAILURE);
         }
     }
+
+    //Creacion de la memoria compartida 
+
+    int state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
+    if(state_fd == -1){
+        perror("Failure to create shared memmory\n");
+    }
+    if(ftruncate(state_fd, sizeof(GameState) + sizeof(int)*(width*heigth)) == -1){
+        perror("Failed to expand the shared memmory\n");
+    }
+    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*heigth), PROT_READ, MAP_SHARED, state_fd,0);
+
+    int sync_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
+    if(sync_fd == -1){
+        perror("Failure to create shared memmory\n");
+    }
+    if(ftruncate(sync_fd, sizeof(GameSync)) == -1){
+        perror("Failed to expand the shared memmory\n");
+    }
+    GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ, MAP_SHARED, state_fd,0);
+
+
+
+
+    //Cleaning
+    munmap(state_map,sizeof(GameState) + sizeof(int)*(width*heigth));
+    close(state_fd);
+    shm_unlink(GAME_MEM);
+    munmap(sync_map,sizeof(GameSync));
+    close(sync_fd);
+    shm_unlink(SYNC_MEM);
 }
