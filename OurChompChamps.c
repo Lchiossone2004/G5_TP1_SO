@@ -141,6 +141,14 @@ int main(int argc, char * argv[]) {
         perror("Error: Last argument requires a value.\n");
         exit(EXIT_FAILURE);
     }
+    if(players_added==0){
+        perror("Error: At least one player must be specified using -p.");
+        exit(EXIT_FAILURE);
+    }
+    if(players_added>9){
+        perror("Error: At most 9 players can be specified using -p.");
+        exit(EXIT_FAILURE);
+    }
     //Creacion de la memoria compartida 
 
     int state_fd;
