@@ -30,16 +30,11 @@ int main(int argc, char * argv[]) {
     int i=1;
 
     while(i<argc){
-        if(!(strcmp(argv[i],"-p"))){
-            i++;
-            while (is_bot && players_added<9 && i<argc){
-                for(int j=0 ; j<6 && is_bot; j++){
-                    if(!(strcmp(argv[i], setting_args[j]))){
-                        is_bot=0;
-                    }
-                   
-                }
-                if(is_bot){
+        if (just_argued) {
+            for (int j = 0; j < 6; j++) {
+                if (!strcmp(argv[i], setting_args[j])) {
+                    perror("Error: Value expected after previous argument, not another argument.\n");
+                    exit(EXIT_FAILURE);
                 }
             }
             just_argued = false;
