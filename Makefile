@@ -5,10 +5,13 @@ CFLAGS = -Wall
 # Target binaries
 BOT = bot
 VIEW = view
+SHM = sharedMem
+MAST = OurChompChamps
 
 # Source files for each program
 BOT_SRC = bot.c
 VIEW_SRC = view.c
+SHM_SRC = sharedMem.c
 
 # Object files for each program
 BOT_OBJ = $(BOT_SRC:.c=.o)
@@ -24,11 +27,11 @@ all: $(BOT) $(VIEW)
 
 # Rule to build the bot binary
 $(BOT): $(BOT_OBJ)
-	$(CC) $(BOT_OBJ) -o $(BOT)
+	$(CC) $(BOT_OBJ) $(SHM_SRC) -o $(BOT)
 
 # Rule to build the view binary
 $(VIEW): $(VIEW_OBJ)
-	$(CC) $(VIEW_OBJ) -o $(VIEW)
+	$(CC) $(VIEW_OBJ) $(SHM_SRC) -o $(VIEW)
 
 # Rule to compile object files
 %.o: %.c
@@ -40,6 +43,6 @@ run: $(BOT) $(VIEW)
 
 # Clean up object and binary files
 clean:
-	rm -f $(BOT_OBJ) $(VIEW_OBJ) $(BOT) $(VIEW)
+	rm -f $(BOT_OBJ) $(VIEW_OBJ) $(BOT) $(VIEW) $(MAST)
 #Builds runs and cleans the project
 build_run_clean: all run clean

@@ -1,8 +1,13 @@
+#ifndef STRUCTS_H
+#define STRUCTS_H
+
+
 #include <stdio.h>
 #include <fcntl.h>                  // For O_* constants
 #include <sys/mman.h>               // For shm_open, mmap
 #include <stdbool.h>                // For bool
 #include <semaphore.h>
+
 typedef struct{
     char player_name[16];           // Player name
     unsigned int score;             // Score
@@ -30,3 +35,5 @@ typedef struct{
     sem_t E;                        // Mutex for the next variable
     unsigned int F;                 // Number of players reading the state
 }   GameSync;
+
+#endif

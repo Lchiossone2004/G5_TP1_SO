@@ -6,6 +6,7 @@
 #include <string.h>     // For strcpy
 #include <stdbool.h>    // For bool
 #include "./structs.h"
+#include "./sharedMem.h"
 
 unsigned char CheckSurroundings(GameState *state_map, int width, int height, int playerNumber);      // Checks the surroundings of the bot to see the highest value tile to jump
 int inBounds(int x, int y, GameState *state_map);      // Checks the position the algorithm is using is valid
@@ -16,19 +17,11 @@ int main(int argc, char *argv[]){
     int width = atoi(argv[1]);          //Playing board width
     int height = atoi(argv[2]);         //Playing board height
 
-    int state_fd = shm_open("/game_state", O_RDONLY,0666);  //Opens and maps the "game_state" shared memmory
-    if(state_fd == -1){
-        perror("Game State shared memmor fail.\n");
-        exit(EXIT_FAILURE);
-    }
-    GameState *state_map = mmap(NULL, sizeof(GameState), PROT_READ, MAP_SHARED, state_fd,0);
-
-    int sync_fd = shm_open("/game_sync", O_RDWR,0666);      //Opens and maps the "game_state" shared memmory
-    if(sync_fd == -1){
-        perror("Sync State shared memmor fail.\n");
-        exit(EXIT_FAILURE);
-    }
-    GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ | PROT_WRITE, MAP_SHARED, sync_fd,0);
+    int state_fd;
+    GameState *state_map;
+    int sync_fd;
+    GameSync *sync_map;
+    openMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
 
     int playerNumber = 0;
     pid_t pid = getpid();
@@ -60,19 +53,7 @@ int main(int argc, char *argv[]){
          }
         sleep(1.5);
     }
-    //Cleaning
-    if(munmap(state_map,sizeof(GameState)) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(munmap(sync_map,sizeof(GameSync)) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(close(state_fd) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(close(sync_fd) == -1){
-        perror("Error unmaping the memory\n");
-    }
+    closeMemory(state_map,sync_map,state_fd,sync_fd,width,height);
     return 0;
 }
 
@@ -105,11 +86,11 @@ int inBounds(int y, int x, GameState *state_map) {
 }
 
 int selectDir(int i, int j) {
-    // Mapea los desplazamientos (i, j) a las direcciones: 0 = arriba, 1 = derecha-arriba, 2 = derecha, etc.
+    // Mapea los desplazamientos (i, j) a las direcciones
     static const int directions[3][3] = {
         {7, 0, 1},
         {6, -1, 2},
         {5, 4, 3}
     };
-    return directions[i + 1][j + 1]; // El índice +1 es para manejar los índices negativos
+    return directions[i + 1][j + 1]; 
 }
