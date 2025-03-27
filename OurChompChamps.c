@@ -14,8 +14,8 @@
 
 
 
-void createPlayers(int players_added,int width, int height, char **players, int (*pipes)[2]);
-void printBoard(int width, int height, int board[width][height]);
+void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]);
+void fillBoard(int width, int height, GameState *state_map);
  
 int main(int argc, char * argv[]) {
     int width=10;
@@ -162,6 +162,14 @@ int main(int argc, char * argv[]) {
     GameSync *sync_map;
     createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
 
+    //Preparacion del juego
+
+    //Creacion de la view
+    fillBoard(width, height,state_map);
+    state_map->board_height = height;
+    state_map->board_width = width;
+    state_map->game_ended = false;
+
     //Creacion de procesos
 
     //Creo los pipes para los hijos (uno por hijo)
@@ -179,7 +187,7 @@ int main(int argc, char * argv[]) {
     }
 
     //Creacion de los players
-    createPlayers(players_added,width,height,players,pipes);
+    createPlayers(state_map,players_added,width,height,players,pipes);
 
     //Manejo de los pipes
     struct timeval time_out;
@@ -215,9 +223,6 @@ int main(int argc, char * argv[]) {
         }
     }
 }
-    //Creacion de la view
-    int board[width][height]; 
-    printBoard(width, height, board);
 
 
 
@@ -231,17 +236,17 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-void printBoard(int width, int height, int board[width][height]) {
-    for(int i = 0; i < width; i++) {
-        for(int j = 0; j < height; j++) {
-            board[i][j] = rand() % 10; //para que quede entre 0 y 9
-            printf("[ %2d ]", board[i][j]);
+void fillBoard(int width, int height, GameState *stae_map) {
+    for(int i = 0; i < height; i++) {
+        for(int j = 0; j < width; j++) {
+           stae_map->board_origin[i*width + j] = rand() % 10; //para que quede entre 0 y 9
         }
-        printf("\n");
     }
 }
 
-void createPlayers(int players_added,int width, int height, char **players, int (*pipes)[2]){                                       //Creo los players, Casteo medio feo pero funciona
+void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]){                                       //Creo los players, Casteo medio feo pero funciona
+    
+    int start_pos[9][2] = {1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9};
     char w[10];
     char h[10];
     char player_name[16] = "nombre";
@@ -257,12 +262,18 @@ void createPlayers(int players_added,int width, int height, char **players, int 
         }
         if(pid == 0){
             strcpy(player_name,players[i]);
+            //Set player parameters
+            state_map->players_list[i].is_blocked = false;
+            strcpy(state_map->players_list[i].player_name, player_name);
+            state_map->players_list[i].pos_x = start_pos[i][0];
+            state_map->players_list[i].pos_y = start_pos[i][1];
             close(pipes[i][0]);         //The child ony writes on the pipe 
-            dup2(pipes[i][1],STDOUT_FILENO);    //Replace de stdout (fd: 1) wiith the created pipe 
+            //dup2(pipes[i][1],STDOUT_FILENO);    //Replace de stdout (fd: 1) wiith the created pipe 
             execv(players[i],args_list);
             perror("Execv fail.\n");
             exit(0);
         }
+        state_map->players_list[i].player_pid = pid;
     }
 }
 

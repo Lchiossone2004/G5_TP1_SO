@@ -10,8 +10,28 @@
 #include <sys/wait.h>   //To wait
 #include <sys/types.h>
 #include <sys/select.h>
+#include "./sharedMem.h"
 
 int main(int argc, char * argv[]){
-    printf("hola soy el bot, mi width es: %s y mi height es; %s y mi nombre es: %s\n", argv[1],argv[2],argv[0]);
+
+    int width = atoi(argv[1]);          //Playing board width
+    int height = atoi(argv[2]);         //Playing board height
+
+    int state_fd;
+    GameState *state_map;
+    int sync_fd;
+    GameSync *sync_map;
+    openMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
+    for(int i; i <height; i++){
+        for(int j = 0; j <width; j++){
+            printf("[%d]",state_map->board_origin[width*i+j]);
+        }
+        printf("\n");
+    }
+    pid_t pid = getpid();
+    int i = 0;
+    while(pid != state_map->players_list[i].player_pid) i++;
+    printf("Name: %s",state_map->players_list[i].player_name);
+    printf("Pos x: %d Posy: %d\n",state_map->players_list[i].pos_x,state_map->players_list[i].pos_y);
     return 0;
 }
