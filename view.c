@@ -7,6 +7,7 @@
 #include <stdbool.h>    // For bool
 #include "./structs.h"
 #include <time.h>
+#include "./sharedMem.h"
 
 void clearScreen();
 int main(int argc, char * argv[]) {
@@ -14,20 +15,11 @@ int main(int argc, char * argv[]) {
     int width = atoi(argv[1]);          //Playing board width
     int height = atoi(argv[2]);         //Playing board height
 
-    int state_fd = shm_open("/game_state", O_RDONLY,0666);  //Opens and maps the "game_state" shared memmory
-    if(state_fd == -1){
-        perror("Game State shared memmor fail.\n");
-        exit(EXIT_FAILURE);
-    }
-    GameState *state_map = mmap(NULL, sizeof(GameState), PROT_READ, MAP_SHARED, state_fd,0);
-
-    int sync_fd = shm_open("/game_sync", O_RDWR,0666);      //Opens and maps the "game_state" shared memmory
-    if(sync_fd == -1){
-        perror("Sync State shared memmor fail.\n");
-        exit(EXIT_FAILURE);
-    }
-    GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ | PROT_WRITE, MAP_SHARED, sync_fd,0);
-
+    int state_fd;
+    GameState *state_map;
+    int sync_fd;
+    GameSync *sync_map;
+    openMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
 
     int colors[] = {100, 102, 103, 104, 105, 106, 107, 100, 41};
     
@@ -69,18 +61,7 @@ int main(int argc, char * argv[]) {
         sem_post(&sync_map->B);                             //Tells master it finished printing 
     }
         //Cleaning
-    if(munmap(state_map,sizeof(GameState)) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(munmap(sync_map,sizeof(GameSync)) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(close(state_fd) == -1){
-        perror("Error unmaping the memory\n");
-    }
-    if(close(sync_fd) == -1){
-        perror("Error unmaping the memory\n");
-    }
+    closeMemory(state_map,sync_map,state_fd,sync_fd,width,height);
     return 0;
 }
 
