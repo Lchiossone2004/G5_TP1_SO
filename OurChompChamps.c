@@ -12,15 +12,18 @@
 #include <sys/select.h>
 #include "./sharedMem.h"
 
-void createPlayers(int players_added,int width, int height, char **players, int (*pipes)[2]);
 
+
+void createPlayers(int players_added,int width, int height, char **players, int (*pipes)[2]);
+void printBoard(int width, int height, int board[width][height]);
+ 
 int main(int argc, char * argv[]) {
     int width=10;
-    int heigth=10;
+    int height=10;
     int delay= 200;
     int timeout=10;
     int seed=time(NULL);
-
+    srand(time(NULL)); // o srand(seed)?
     bool has_view=false;
     char* view;
     char* players[9];
@@ -49,7 +52,7 @@ int main(int argc, char * argv[]) {
             i++;
         }
         else if(!(strcmp(argv[i],setting_args[1])) && atoi(argv[++i])>=10){
-            heigth=atoi(argv[i]);
+            height=atoi(argv[i]);
             i++;
         }
         else if(!(strcmp(argv[i],setting_args[2])) && atoi(argv[++i])>=0){
@@ -78,10 +81,10 @@ int main(int argc, char * argv[]) {
     //Creacion de la memoria compartida 
 
     int state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
-    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*heigth), PROT_READ, MAP_SHARED, state_fd,0);
+    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ, MAP_SHARED, state_fd,0);
     int sync_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
     GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ, MAP_SHARED, state_fd,0);
-    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,heigth);
+    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
 
     //Creacion de procesos
 
@@ -100,7 +103,7 @@ int main(int argc, char * argv[]) {
     }
 
     //Creacion de los players
-    createPlayers(players_added,width,heigth,players,pipes);
+    createPlayers(players_added,width,height,players,pipes);
 
     //Manejo de los pipes
     struct timeval time_out;
@@ -137,19 +140,30 @@ int main(int argc, char * argv[]) {
     }
 }
     //Creacion de la view
+    int board[width][height]; 
+    printBoard(width, height, board);
+
 
 
     //Cleaning
 
-    for(int i = 0; i<players_added; i++){
+    for(int i = 0; i < players_added; i++){
         wait(NULL);
     }
 
-    clearMemory(state_map,sync_map,state_fd,sync_fd,width,heigth);
+    clearMemory(state_map,sync_map,state_fd,sync_fd,width,height);
     return 0;
 }
 
-
+void printBoard(int width, int height, int board[width][height]) {
+    for(int i = 0; i < width; i++) {
+        for(int j = 0; j < height; j++) {
+            board[i][j] = rand() % 10; //para que quede entre 0 y 9
+            printf("[ %2d ]", board[i][j]);
+        }
+        printf("\n");
+    }
+}
 
 void createPlayers(int players_added,int width, int height, char **players, int (*pipes)[2]){                                       //Creo los players, Casteo medio feo pero funciona
     char w[10];
