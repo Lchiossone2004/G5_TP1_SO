@@ -24,6 +24,7 @@ int main(int argc, char * argv[]) {
     int timeout=10;
     int seed=time(NULL);
     srand(time(NULL)); // o srand(seed)?
+    bool just_argued=false;
     bool has_view=false;
     char* view;
     char* players[9];
@@ -31,60 +32,135 @@ int main(int argc, char * argv[]) {
     char is_bot=1;
     int players_added=0;
     int i=1;
-    while(i<argc){
-        if(!(strcmp(argv[i],"-p"))){
-            i++;
-            while (is_bot && players_added<9 && i<argc){
-                for(int j=0 ; j<6 && is_bot; j++){
-                    if(!(strcmp(argv[i], setting_args[j]))){
-                        is_bot=0;
-                    }
-                   
-                }
-                if(is_bot){
-                    players[players_added++]=argv[i++];
 
+    while(i<argc){
+        if (just_argued) {
+            for (int j = 0; j < 6; j++) {
+                if (!strcmp(argv[i], setting_args[j])) {
+                    perror("Error: Value expected after previous argument, not another argument.\n");
+                    exit(EXIT_FAILURE);
                 }
             }
+            just_argued = false;
         }
-        else if(!(strcmp(argv[i],setting_args[0])) && atoi(argv[++i])>=10){
-            width=atoi(argv[i]);
+        if (!strcmp(argv[i], "-p")) {
+            just_argued = true;
             i++;
+            while (is_bot && players_added < 9 && i < argc) {
+                for (int j = 0; j < 6 && is_bot; j++) {
+                    if (!strcmp(argv[i], setting_args[j])) {
+                        is_bot = 0;
+                    }
+                }
+                if (is_bot) {
+                    players[players_added++] = argv[i++];
+                    printf("%s \n", argv[i - 1]);
+                }
+            }
+            just_argued = false; 
         }
-        else if(!(strcmp(argv[i],setting_args[1])) && atoi(argv[++i])>=10){
-            height=atoi(argv[i]);
+
+        else if (!strcmp(argv[i], setting_args[0])) {  // -w
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -w requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (atoi(argv[i]) < 10) {
+                perror("Invalid width value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            width = atoi(argv[i]);
             i++;
+            just_argued = false; 
         }
-        else if(!(strcmp(argv[i],setting_args[2])) && atoi(argv[++i])>=0){
-            delay=atoi(argv[i]);
+        else if (!strcmp(argv[i], setting_args[1])) {  // -h
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -h requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (atoi(argv[i]) < 10) {
+                perror("Invalid height value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            height = atoi(argv[i]);
             i++;
+            just_argued = false; 
         }
-        else if(!(strcmp(argv[i],setting_args[3])) && atoi(argv[++i])>=10){
-            timeout=atoi(argv[i]);
+        else if (!strcmp(argv[i], setting_args[2])) {  // -d
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -d requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (atoi(argv[i]) < 0) {
+                perror("Invalid delay value, must be positive.\n");
+                exit(EXIT_FAILURE);
+            }
+            delay = atoi(argv[i]);
             i++;
+            just_argued = false; 
         }
-        else if(!(strcmp(argv[i],setting_args[4])) && atoi(argv[++i])){
-            seed=atoi(argv[i]);
+        else if (!strcmp(argv[i], setting_args[3])) {  // -t
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -t requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            if (atoi(argv[i]) < 10) {
+                perror("Invalid timeout value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            timeout = atoi(argv[i]);
             i++;
+            just_argued = false; 
         }
-        else if(!(strcmp(argv[i],setting_args[5]))){
-            has_view=true;
-            view=argv[++i];
+        else if (!strcmp(argv[i], setting_args[4])) {  // -s
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -s requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            seed = atoi(argv[i]);
             i++;
+            just_argued = false; 
         }
-        else{
-            perror("Invalid argument \n");
+        else if (!strcmp(argv[i], setting_args[5])) {  // -v
+            just_argued = true;
+            if (++i >= argc) {
+                perror("Error: -v requires a value.\n");
+                exit(EXIT_FAILURE);
+            }
+            has_view = true;
+            view = argv[i];
+            i++;
+            just_argued = false; 
+        }
+        else if (!just_argued) {
+            perror("Invalid argument\n");
             exit(EXIT_FAILURE);
         }
     }
-
+    if (just_argued) {
+        perror("Error: Last argument requires a value.\n");
+        exit(EXIT_FAILURE);
+    }
+    if(players_added==0){
+        perror("Error: At least one player must be specified using -p.");
+        exit(EXIT_FAILURE);
+    }
+    if(players_added>9){
+        perror("Error: At most 9 players can be specified using -p.");
+        exit(EXIT_FAILURE);
+    }
     //Creacion de la memoria compartida 
 
-    int state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
-    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ, MAP_SHARED, state_fd,0);
-    int sync_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
-    GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ, MAP_SHARED, state_fd,0);
     createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
+    int state_fd;
+    GameState *state_map;
+    int sync_fd;
+    GameSync *sync_map;
 
     //Creacion de procesos
 
