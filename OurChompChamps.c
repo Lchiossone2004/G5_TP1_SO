@@ -156,11 +156,11 @@ int main(int argc, char * argv[]) {
     }
     //Creacion de la memoria compartida 
 
-    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
     int state_fd;
     GameState *state_map;
     int sync_fd;
     GameSync *sync_map;
+    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
 
     //Creacion de procesos
 
