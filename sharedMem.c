@@ -8,7 +8,7 @@ void createMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync *
     if (ftruncate(*state_fd, sizeof(GameState) + sizeof(int)*(width*height)) == -1) {
         perror("Failed to expand the shared memory\n");
     }
-    *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ | PROT_WRITE, MAP_SHARED, *state_fd, 0);
+    *state_map = (GameState*)mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ | PROT_WRITE, MAP_SHARED, *state_fd, 0);
     if (*state_map == MAP_FAILED) {
         perror("Failed to map shared memory\n");
         exit(EXIT_FAILURE);
@@ -36,12 +36,12 @@ void clearMemory(GameState *state_map, GameSync *sync_map, int state_fd, int syn
     shm_unlink(SYNC_MEM);
 }
 void openMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync **sync_map, int width, int height){
-    *state_fd = shm_open("/game_state", O_RDONLY,06444);  //Opens and maps the "game_state" shared memmory
+    *state_fd = shm_open("/game_state", O_RDONLY,0644);  //Opens and maps the "game_state" shared memmory
         if(*state_fd == -1){
             perror("Game State shared memmor fail.\n");
             exit(EXIT_FAILURE);
         }
-    *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ, MAP_SHARED, *state_fd,0);
+    *state_map = (GameState*)mmap(NULL, sizeof(GameState) + sizeof(int)*(width*height), PROT_READ, MAP_SHARED, *state_fd,0);
 
     *sync_fd = shm_open("/game_sync", O_RDWR,0666);      //Opens and maps the "game_state" shared memmory    
     if(*sync_fd == -1){
