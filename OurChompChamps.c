@@ -77,10 +77,10 @@ int main(int argc, char * argv[]) {
 
     //Creacion de la memoria compartida 
 
-    int state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
-    GameState *state_map = mmap(NULL, sizeof(GameState) + sizeof(int)*(width*heigth), PROT_READ, MAP_SHARED, state_fd,0);
-    int sync_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0666);
-    GameSync *sync_map = mmap(NULL, sizeof(GameSync), PROT_READ, MAP_SHARED, state_fd,0);
+    int state_fd;
+    GameState *state_map;
+    int sync_fd;
+    GameSync *sync_map;
     createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,heigth);
 
     //Creacion de procesos
