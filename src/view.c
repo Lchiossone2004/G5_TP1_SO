@@ -5,9 +5,9 @@
 #include <unistd.h>     // For ftruncate, close
 #include <string.h>     // For strcpy
 #include <stdbool.h>    // For bool
-#include "./structs.h"
+#include "structs.h"
 #include <time.h>
-#include "./sharedMem.h"
+#include "sharedMem.h"
 
 void clearScreen();
 int main(int argc, char * argv[]) {

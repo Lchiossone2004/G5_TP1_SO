@@ -1,4 +1,4 @@
-#include "./sharedMem.h"
+#include "sharedMem.h"
 
 void createMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync **sync_map, int width, int height) {                 //Creo la memoria compratida 
     *state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0644);

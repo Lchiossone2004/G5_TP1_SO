@@ -5,12 +5,12 @@
 #include <unistd.h>     // For ftruncate, close
 #include <string.h>     // For strcpy
 #include <stdbool.h>    // For bool
-#include "./structs.h"
+#include "structs.h"
 #include <time.h>
 #include <sys/wait.h>   //To wait
 #include <sys/types.h>
 #include <sys/select.h>
-#include "./sharedMem.h"
+#include "sharedMem.h"
 
 
 

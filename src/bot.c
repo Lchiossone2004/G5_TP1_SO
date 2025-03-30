@@ -5,8 +5,8 @@
 #include <unistd.h>     // For ftruncate, close
 #include <string.h>     // For strcpy
 #include <stdbool.h>    // For bool
-#include "./structs.h"
-#include "./sharedMem.h"
+#include "structs.h"
+#include "sharedMem.h"
 
 unsigned char CheckSurroundings(GameState *state_map, int width, int height, int playerNumber);      // Checks the surroundings of the bot to see the highest value tile to jump
 int inBounds(int x, int y, GameState *state_map);      // Checks the position the algorithm is using is valid
