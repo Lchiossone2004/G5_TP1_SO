@@ -11,7 +11,6 @@
 
 void clearScreen();
 int main(int argc, char * argv[]) {
-
     int width = atoi(argv[1]);          //Playing board width
     int height = atoi(argv[2]);         //Playing board height
 

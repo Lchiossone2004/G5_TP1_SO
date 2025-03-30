@@ -22,16 +22,16 @@ int main(int argc, char * argv[]){
     int sync_fd;
     GameSync *sync_map;
     openMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
-    for(int i = 0; i < height; i++){
-        for(int j = 0; j <width; j++){
-            printf("[%d]",state_map->board_origin[width*i+j]);
-        }
-        printf("\n");
-    }
+    // for(int i = 0; i < height; i++){
+    //     for(int j = 0; j <width; j++){
+    //         printf("[%d]",state_map->board_origin[width*i+j]);
+    //     }
+    //     printf("\n");
+    // }
     pid_t pid = getpid();
     int i = 0;
     while(pid != state_map->players_list[i].player_pid) i++;
-    printf("Name: %s",state_map->players_list[i].player_name);
-    printf("Pos x: %d Posy: %d\n",state_map->players_list[i].pos_x,state_map->players_list[i].pos_y);
+    // printf("Name: %s",state_map->players_list[i].player_name);
+    // printf("Pos x: %d Posy: %d\n",state_map->players_list[i].pos_x,state_map->players_list[i].pos_y);
     return 0;
 }
