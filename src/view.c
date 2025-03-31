@@ -5,13 +5,12 @@
 #include <unistd.h>     // For ftruncate, close
 #include <string.h>     // For strcpy
 #include <stdbool.h>    // For bool
-#include "./structs.h"
+#include "structs.h"
 #include <time.h>
-#include "./sharedMem.h"
+#include "sharedMem.h"
 
 void clearScreen();
 int main(int argc, char * argv[]) {
-
     int width = atoi(argv[1]);          //Playing board width
     int height = atoi(argv[2]);         //Playing board height
 
