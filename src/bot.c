@@ -1,16 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>      // For O_* constants
-#include <sys/mman.h>   // For shm_open, mmap
-#include <unistd.h>     // For ftruncate, close
 #include <string.h>     // For strcpy
-#include <stdbool.h>    // For bool
-#include "structs.h"
 #include "sharedMem.h"
 
-unsigned char CheckSurroundings(GameState *state_map, int width, int height, int playerNumber);      // Checks the surroundings of the bot to see the highest value tile to jump
-int inBounds(int x, int y, GameState *state_map);      // Checks the position the algorithm is using is valid
-int selectDir(int x, int y);                                // Selects the direction to go  
+unsigned char CheckSurroundings(GameState *state_map, int width, int height, int playerNumber);         // Checks the surroundings of the bot to see the highest value tile to jump
+int inBounds(int x, int y, GameState *state_map);                                                       // Checks the position the algorithm is using is valid
+int selectDir(int x, int y);                                                                            // Selects the direction to go  
 
 int main(int argc, char *argv[]){
 
@@ -31,24 +24,25 @@ int main(int argc, char *argv[]){
 
     unsigned char direction;
     while(!state_map->players_list[playerNumber].is_blocked){
-        sem_wait(&sync_map->C);         //Mutex of master
-        sem_wait(&sync_map->E);         //Mutex of other bots
-        sync_map->F++;                  //Increments the amount of readers
-        if(sync_map->F == 1){           //Checks if he is the first reading 
-            sem_wait(&sync_map->D);     //Mutex the game stat
+        sem_wait(&sync_map->C);                                 //Mutex of master
+        sem_wait(&sync_map->E);                                 //Mutex of other bots
+        sync_map->F++;                                          //Increments the amount of readers
+        if(sync_map->F == 1){                                   //Checks if he is the first reading 
+            sem_wait(&sync_map->D);                             //Mutex the game stat
         }
-        sem_post(&sync_map->E);         //Frees other bots
+        sem_post(&sync_map->E);                                 //Frees other bots
       
         direction = CheckSurroundings(state_map,width,height,playerNumber);     
-        sem_wait(&sync_map->E);         //Mutex of other bots
-        sync_map->F--;                  //Substracs form the reader list
-        if(sync_map->F == 0){
-            sem_post(&sync_map->D);     //If he is the last one it frees the game state
-        }
-        sem_post(&sync_map->E);         //Frees other bots
-        sem_post(&sync_map->C);         //Frees the master
 
-        if(write(1, &direction, sizeof(direction)) == -1){  //Writes in the pipe o fd 1 (given by the master)
+        sem_wait(&sync_map->E);                                 //Mutex of other bots
+        sync_map->F--;                                          //Substracs form the reader list
+        if(sync_map->F == 0){
+            sem_post(&sync_map->D);                             //If he is the last one it frees the game state
+        }
+        sem_post(&sync_map->E);                                 //Frees other bots
+        sem_post(&sync_map->C);                                 //Frees the master
+
+        if(write(1, &direction, sizeof(direction)) == -1){      //Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
          }
         sleep(1.5);
@@ -58,39 +52,37 @@ int main(int argc, char *argv[]){
 }
 
 unsigned char CheckSurroundings(GameState *state_map, int width, int height, int playerNumber){
-    int toRet = 0;
-    int aux;
+    int direction = 0;
+    int position_value = 0;
+    int actual_value = 0;
     unsigned int x,y;
-    int actual = 0;
     x = state_map->players_list[playerNumber].pos_x;
     y = state_map->players_list[playerNumber].pos_y;
 
     for(int fil = -1 ; fil <= 1 ; fil++){
         for(int col = -1; col<= 1; col++){
             if((fil != 0 || col != 0 ) && inBounds(fil + y,col + x,state_map)){
-                aux = state_map->board_origin[(x+col) + state_map->board_width*(y+fil)];
-                if(aux > actual ){
-                    toRet = selectDir(fil,col);
-                    actual = state_map->board_origin[(x+col) + state_map->board_width*(y+fil)];
+                position_value = state_map->board_origin[(x+col) + state_map->board_width*(y+fil)];
+                if(position_value > actual_value ){
+                    direction = selectDir(fil,col);
+                    actual_value = state_map->board_origin[(x+col) + state_map->board_width*(y+fil)];
                 }
             }
         }
 }
-    return toRet;
+    return direction;
 }
 
-int inBounds(int y, int x, GameState *state_map) {
-    // Verifica si las coordenadas están dentro de los límites del tablero
+int inBounds(int y, int x, GameState *state_map) {              //Checks if the position is inside the boundaries of the board 
     return x >= 0 && x < state_map->board_width &&
            y >= 0 && y < state_map->board_height;
 }
 
-int selectDir(int i, int j) {
-    // Mapea los desplazamientos (i, j) a las direcciones
+int selectDir(int fil, int col) {                               //Returns the direction based on the adjacent x,y that has teh highes value
     static const int directions[3][3] = {
         {7, 0, 1},
         {6, -1, 2},
         {5, 4, 3}
     };
-    return directions[i + 1][j + 1]; 
+    return directions[fil + 1][col + 1]; 
 }
