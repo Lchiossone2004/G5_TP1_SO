@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>      // For O_* constants
@@ -17,139 +18,83 @@
 void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]);
 void fillBoard(int width, int height, GameState *state_map);
 void semaphoreStary(GameSync *sync_map);
- 
-int main(int argc, char * argv[]) {
-    int width=10;
-    int height=10;
-    int delay= 200;
-    int timeout=10;
-    int seed = time(NULL);
-    bool just_argued=false;
-    char* view = NULL;
-    char* players[9];
-    char* setting_args[6]={"-w", "-h", "-d", "-t", "-s", "-v"};
-    char is_bot=1;
-    int players_added=0;
-    int i=1;
 
-    while(i<argc){
-        if (just_argued) {
-            for (int j = 0; j < 6; j++) {
-                if (!strcmp(argv[i], setting_args[j])) {
-                    perror("Error: Value expected after previous argument, not another argument.\n");
+int main(int argc, char *argv[]) {
+    int opt;
+    int width = 10;
+    int height = 10;
+    int delay = 200;
+    int timeout = 10;
+    int seed = time(NULL);
+    char *view = NULL;
+    char *players[9] = {NULL};
+    int players_added = 0;
+    while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1) {
+        switch (opt){
+            case 'p':
+                if(!optarg || optarg[0] == '-'){
+                    perror("Must add player.");
                     exit(EXIT_FAILURE);
                 }
-            }
-            just_argued = false;
-        }
-        if (!strcmp(argv[i], "-p")) {
-            just_argued = true;
-            i++;
-            while (is_bot && players_added < 9 && i < argc) {
-                for (int j = 0; j < 6 && is_bot; j++) {
-                    if (!strcmp(argv[i], setting_args[j])) {
-                        is_bot = 0;
-                    }
+                players[players_added++] = optarg;
+                printf("Player added: %s\n", optarg);
+                while (optind < argc && argv[optind][0] != '-') {
+                    players[players_added++] = argv[optind++];
+                    printf("Player added: %s\n", players[players_added - 1]);
                 }
-                if (is_bot) {
-                    players[players_added++] = argv[i++];
-                    printf("%s \n", argv[i - 1]);
+                break;
+            case 'w':
+                int width = atoi(optarg);
+                if (width < 10) {
+                    perror("Invalid width value, must be higher than 9.\n");
+                    exit(EXIT_FAILURE);
                 }
-            }
-            just_argued = false; 
-        }
-
-        else if (!strcmp(argv[i], setting_args[0])) {  // -w
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -w requires a value.\n");
+                break;
+            case 'h':
+                int height = atoi(optarg);
+                if (height < 10) {
+                    perror("Invalid height value, must be higher than 9.\n");
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 'd':
+                int delay = atoi(optarg);
+                if (delay < 0) {
+                    perror("Invalid delay value, must be positive.\n");
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 't':
+                int timeout = atoi(optarg);
+                if (timeout < 10) {
+                    perror("Invalid timeout value, must be higher than 9.\n");
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 's':
+                seed = atoi(optarg);
+                break;
+            case 'v':
+                view = optarg;
+                break;
+            case '?':
+                if (optopt == 'p' || optopt == 'w' || optopt == 'h' || optopt == 'd' || optopt == 't' || optopt == 's' || optopt == 'v'){
+                    fprintf(stderr, "Error: Option -%c requires a value.\n", optopt);
+                } else {
+                    perror("Error: Invalid argument");
+                }
                 exit(EXIT_FAILURE);
-            }
-            if (atoi(argv[i]) < 10) {
-                perror("Invalid width value, must be higher than 9.\n");
+            default:
+                fprintf(stderr, "Error inesperado.\n");
                 exit(EXIT_FAILURE);
-            }
-            width = atoi(argv[i]);
-            i++;
-            just_argued = false; 
-        }
-        else if (!strcmp(argv[i], setting_args[1])) {  // -h
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -h requires a value.\n");
-                exit(EXIT_FAILURE);
-            }
-            if (atoi(argv[i]) < 10) {
-                perror("Invalid height value, must be higher than 9.\n");
-                exit(EXIT_FAILURE);
-            }
-            height = atoi(argv[i]);
-            i++;
-            just_argued = false; 
-        }
-        else if (!strcmp(argv[i], setting_args[2])) {  // -d
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -d requires a value.\n");
-                exit(EXIT_FAILURE);
-            }
-            if (atoi(argv[i]) < 0) {
-                perror("Invalid delay value, must be positive.\n");
-                exit(EXIT_FAILURE);
-            }
-            delay = atoi(argv[i]);
-            i++;
-            just_argued = false; 
-        }
-        else if (!strcmp(argv[i], setting_args[3])) {  // -t
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -t requires a value.\n");
-                exit(EXIT_FAILURE);
-            }
-            if (atoi(argv[i]) < 10) {
-                perror("Invalid timeout value, must be higher than 9.\n");
-                exit(EXIT_FAILURE);
-            }
-            timeout = atoi(argv[i]);
-            i++;
-            just_argued = false; 
-        }
-        else if (!strcmp(argv[i], setting_args[4])) {  // -s
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -s requires a value.\n");
-                exit(EXIT_FAILURE);
-            }
-            seed = atoi(argv[i]);
-            i++;
-            just_argued = false; 
-        }
-        else if (!strcmp(argv[i], setting_args[5])) {  // -v
-            just_argued = true;
-            if (++i >= argc) {
-                perror("Error: -v requires a value.\n");
-                exit(EXIT_FAILURE);
-            }
-            view = argv[i];
-            i++;
-            just_argued = false; 
-        }
-        else if (!just_argued) {
-            perror("Invalid argument\n");
-            exit(EXIT_FAILURE);
         }
     }
-    if (just_argued) {
-        perror("Error: Last argument requires a value.\n");
+    if (players_added == 0) {
+        perror("Error: At least one player must be specified using -p.\n");
         exit(EXIT_FAILURE);
     }
-    if(players_added==0){
-        perror("Error: At least one player must be specified using -p.");
-        exit(EXIT_FAILURE);
-    }
-    if(players_added>9){
-        perror("Error: At most 9 players can be specified using -p.");
+    if (players_added > 9) {
+        perror("Error: At most 9 players can be specified using -p.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -316,4 +261,3 @@ void createPlayers(GameState *state_map,int players_added,int width, int height,
         state_map->players_list[i].player_pid = pid;
     }
 }
-
