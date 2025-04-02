@@ -53,11 +53,13 @@ run: $(BOT) $(VIEW)
 
 # Run the precompiled ChompChamps program with the specified number of bots
 run_nat: $(TBOT) $(VIEW)
-	./$(MAST) -p $(foreach n, $(shell seq 1 $(BOTS)), $(TBOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
+	./$(MAST) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
 
 # Clean up binary files
 clean:
 	rm -f $(BOT) $(VIEW) $(MAST) $(TBOT)
 
-# Builds, runs, and cleans the project
+# Builds, runs, and cleans the project with the original master
 all: build run clean
+# Builds, runs, and cleans the project with our master
+all_nat: build run_nat clean

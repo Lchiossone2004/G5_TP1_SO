@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
 
     while(!state_map->game_ended){
         clearScreen();
-        sem_wait(&sync_map->A);                                             //Tells master its going to print
+        sem_wait(&sync_map->to_print);                                             //Tells master its going to print
         for(int row = 0; row < height; row++){                              //Rows
             for(int col = 0; col < width; col++){                           //Collums
                 position_value = state_map->board_origin[col+row*width];
@@ -75,8 +75,9 @@ int main(int argc, char * argv[]) {
         printf("Score: %d | ", state_map->players_list[i].score);                                                       //Prints player score
         printf("Coordinates(x,y): (%d,%d)\n",state_map->players_list[i].pos_x,state_map->players_list[i].pos_y);
     }
-        sem_post(&sync_map->B);                                                                                         //Tells master it finished printing 
+        sem_post(&sync_map->end_print);                                                                                         //Tells master it finished printing 
     }
+    
     
     closeMemory(state_map,sync_map,state_fd,sync_fd,width,height);                                                      //Cleaning 
 

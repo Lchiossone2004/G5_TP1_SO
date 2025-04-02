@@ -24,23 +24,25 @@ int main(int argc, char *argv[]){
 
     unsigned char direction;
     while(!state_map->players_list[playerNumber].is_blocked){
-        sem_wait(&sync_map->C);                                 //Mutex of master
-        sem_wait(&sync_map->E);                                 //Mutex of other bots
-        sync_map->F++;                                          //Increments the amount of readers
-        if(sync_map->F == 1){                                   //Checks if he is the first reading 
-            sem_wait(&sync_map->D);                             //Mutex the game stat
+        sem_wait(&sync_map->master_mutex);                                 //Mutex of master
+        sem_post(&sync_map->master_mutex);                                 //Mutex of master
+
+        sem_wait(&sync_map->reader_mutex);                                 //Mutex of other bots
+        sync_map->readers_counter++;                                          //Increments the amount of readers
+        if(sync_map->readers_counter == 1){                                   //Checks if he is the first reading 
+            sem_wait(&sync_map->state_mutex);                             //Mutex the game stat
         }
-        sem_post(&sync_map->E);                                 //Frees other bots
+        sem_post(&sync_map->reader_mutex);                                 //Frees other bots
       
         direction = CheckSurroundings(state_map,width,height,playerNumber);     
 
-        sem_wait(&sync_map->E);                                 //Mutex of other bots
-        sync_map->F--;                                          //Substracs form the reader list
-        if(sync_map->F == 0){
-            sem_post(&sync_map->D);                             //If he is the last one it frees the game state
+        sem_wait(&sync_map->reader_mutex);                                 //Mutex of other bots
+        sync_map->readers_counter--;                                          //Substracs form the reader list
+        if(sync_map->readers_counter == 0){
+            sem_post(&sync_map->state_mutex);                             //If he is the last one it frees the game state
         }
-        sem_post(&sync_map->E);                                 //Frees other bots
-        sem_post(&sync_map->C);                                 //Frees the master
+        sem_post(&sync_map->reader_mutex);                                 //Frees other bots
+        sem_post(&sync_map->master_mutex);                                 //Frees the master
 
         if(write(1, &direction, sizeof(direction)) == -1){      //Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");

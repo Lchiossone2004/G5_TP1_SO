@@ -1,23 +1,4 @@
-#define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>      // For O_* constants
-#include <sys/mman.h>   // For shm_open, mmap
-#include <unistd.h>     // For ftruncate, close
-#include <string.h>     // For strcpy
-#include <stdbool.h>    // For bool
-#include "structs.h"
-#include <time.h>
-#include <sys/wait.h>   //To wait
-#include <sys/types.h>
-#include <sys/select.h>
-#include "sharedMem.h"
-
-
-
-void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]);
-void fillBoard(int width, int height, GameState *state_map);
-void semaphoreStary(GameSync *sync_map);
+#include "master.h"
 
 int main(int argc, char *argv[]) {
     int opt;
@@ -104,7 +85,7 @@ int main(int argc, char *argv[]) {
     GameState *state_map;
     int sync_fd;
     GameSync *sync_map;
-    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
+    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);     //Creo la memoria compartida 
 
     //Setting up the game
     
@@ -122,7 +103,7 @@ int main(int argc, char *argv[]) {
 
         //Creation of the view
 
-    if(view != NULL){
+    if(view != NULL){                   //Seteo de view
         printf("hay view\n");
         char w[10];
         char h[10];
@@ -141,15 +122,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    sem_post(&sync_map->A);
-    sem_wait(&sync_map->B);
-    sem_wait(&sync_map->A);
-
         //Creation of the pipes for players (one for each)
 
     int pipes[players_added][2];
     int max_fd = 0;
-    for(int i = 0; i < players_added; i++){
+    for(int i = 0; i < players_added; i++){             //Creacion de pipdes para los hijos 
         if(pipe(pipes[i]) == -1){
             perror("Failure creating pipe.\n");
             return 1;
@@ -160,65 +137,161 @@ int main(int argc, char *argv[]) {
     }
 
         //Creation of the players
-    createPlayers(state_map,players_added,width,height,players,pipes);
-
+    createPlayers(state_map,players_added,width,height,players,pipes);          //Creo los jugadores
+    state_map->num_of_players = players_added;
     //Pipe management
-    struct timeval time_out;
+    struct timeval time_out;                                                    //Estructuras necesarias para el chequeo de pipdes y juego 
     time_out.tv_sec = timeout;
     time_out.tv_usec = 0;
-    fd_set read_fds;
-    for(int i = 0; i<players_added; i++){
-        FD_ZERO(&read_fds);                                     //Setting up the pipe list for the select 
-        for(int j = 0; j <players_added; j++){                  //Fills up the pipe list
-            FD_SET(pipes[i][0],&read_fds);                      
+    int priority = 0;
+    bool all_blocked = false;
+    bool game_ended = false;
+    if(view != NULL){
+    sem_post(&sync_map->to_print);      //imagein inicial
+    sem_wait(&sync_map->end_print);
+    }
+    while(!game_ended){
+        Request request = checkRequest(time_out,players_added,pipes, max_fd);       //Busca una request
+        sem_wait(&sync_map->master_mutex);                                          //Esto es lo que dijo el profe para que no se desbarate todo 
+        sem_wait(&sync_map->state_mutex);
+        sem_post(&sync_map->master_mutex);
+
+        if(processRequest(request, state_map) != 0){                                //Procesamos la request y vemos si es un movimiento valido o no 
+            state_map->players_list[request.player_num].invalid_moves++;
         }
-    int act = select(max_fd+1,&read_fds,NULL,NULL,&time_out);   //Select for each player (checking each player pipe)
-    if(act == -1){
-        perror("Error makeing the select");
-        return 1;
-    }
-    else if(act == 0){
-        printf("Timeout\n");
-    }
-    else{
-        for(int i = 0; i<players_added; i++){
-            if(FD_ISSET(pipes[i][0],&read_fds)){                //Checks if the i-player has written something on his pipe
-                char buffer[512] = {0};
-                int readed = read(pipes[i][0],buffer,sizeof(buffer));
-                if(readed < 0){
-                    perror("Error reading the buffer\n");
-                }
-                else{
-                printf("Readed:%s, From child N: %d\n",buffer,i+1);
-                }
+        else{
+            state_map->players_list[request.player_num].valid_moves++;
+        }
+        all_blocked = true; 
+        for(int player = 0; player < players_added; player++){                      //Chequeamos si todos los jugadores estan bloqueados
+            isBlocked(state_map,player);
+            if(!state_map->players_list[player].is_blocked){
+                all_blocked = false;
             }
         }
+        if(all_blocked == true){                                                    //Si estan bloqueados termina el juego 
+            game_ended = true;
+        }
+        if(view != NULL){
+        sem_post(&sync_map->to_print);                                              //Y estos dos semaforos son para el print y el ultimo libera el game state para los players
+        sem_wait(&sync_map->end_print);
+        }
+        sem_post(&sync_map->state_mutex);
+        
+
     }
-}
+    if(view != NULL){
+    sem_wait(&sync_map->state_mutex);                                                   //Esto ultimo es para que la view pueda exitear de manera corecta y no se quede trabada 
+    state_map->game_ended = true;
+    sem_post(&sync_map->state_mutex);
+    sem_post(&sync_map->to_print);                           
+    sem_wait(&sync_map->end_print);   
+    }
 
-    //Cleaning
-
-    for(int i = 0; i < players_added; i++){                     //Waits for the players and view to finish
+    for(int i = 0; i < players_added; i++){                     //Espera que todos los procesos hijos terminen
         wait(NULL);
     }
+    if(view != NULL){                                           //Si la view esta prendida la tengo en cuenta para esperarla 
+        wait(NULL);
+    }
+
+    //Cleaning
 
     clearMemory(state_map,sync_map,state_fd,sync_fd,width,height);  //Clears and closes the shared memory
     return 0;
 }
 
+void isBlocked(GameState *state_map, int player_number){        //Chequea si el jugador esta bloqueado 
+    bool blocked = true;
+    for(int fil = -1; fil <2; fil++){
+        for(int col = -1; col < 2; col++){
+            int x = state_map->players_list[player_number].pos_x;
+            int y = state_map->players_list[player_number].pos_y;
+            if((fil != 0 || col != 0 ) && isValid(fil + y,col + x,state_map)){
+                return;
+            }
+        }
+    }
+    state_map->players_list[player_number].is_blocked = blocked;
+}
 
-void semaphoreStary(GameSync *sync_map){
-    sem_init(&sync_map->A,0,1);
-    sem_init(&sync_map->B,0,1);
-    sem_init(&sync_map->C,1,1);
-    sem_init(&sync_map->D,1,1);
-    sem_init(&sync_map->E,1,1);
-    sync_map->F = 0;
+int processRequest(Request request, GameState *state_map){      //Agarra la request y actualiza la psoicion del jugador y el tablero 
+    const int delta_x[8] = { 0,  1,  1,  1,  0, -1, -1, -1};  
+    const int delta_y[8] = {-1, -1,  0,  1,  1,  1,  0, -1};
+    int new_x = state_map->players_list[request.player_num].pos_x + delta_x[request.direction];
+    int new_y = state_map->players_list[request.player_num].pos_y + delta_y[request.direction];
+    if(isValid(new_y,new_x,state_map)){
+        state_map->players_list[request.player_num].pos_x = new_x;
+        state_map->players_list[request.player_num].pos_y = new_y;
+        state_map->board_origin[new_y*state_map->board_width + new_x] = (-1)*request.player_num;
+        return 0;
+    }
+    else{
+        return 0;
+    }
 }
 
 
 
-void fillBoard(int width, int height, GameState *state_map) {
+
+
+Request checkRequest(struct timeval time_out, int players_added,int (*pipes)[2], int max_fd){           //Mira los pipes y busca requests (aca es donde falta el tema de un orden justo)
+    Request request = { .direction = -1, .player_num = -1 }; // Inicializa correctamente
+    fd_set read_fds;
+    FD_ZERO(&read_fds);                                     //Setting up the pipe list for the select 
+    for(int j = 0; j <players_added; j++){                  //Fills up the pipe list
+        if (pipes[j][0] != -1) {  // Solo agregar si el descriptor sigue abierto
+            FD_SET(pipes[j][0], &read_fds);
+        }                     
+    }
+    int act = select(max_fd+1,&read_fds,NULL,NULL,&time_out);   //Select for each player (checking each player pipe)
+        if(act == -1){
+            perror("Error makeing the select");
+            exit(EXIT_FAILURE);
+        }
+        else if(act == 0){
+            request.direction = -1;
+            request.player_num = -1;
+            printf("Timeout\n");
+        }
+        else{
+            for(int i = 0; i<players_added; i++){
+                if(FD_ISSET(pipes[i][0],&read_fds)){                //Checks if the i-player has written something on his pipe
+                    int direc;
+                    memset(&direc, 0, sizeof(direc));
+                    int readed = read(pipes[i][0],&direc,sizeof(direc));
+                    if (readed == 0) {
+                        printf("Pipe cerrado por el jugador %d\n", i);
+                        close(pipes[i][0]); 
+                        FD_CLR(pipes[i][0], &read_fds);
+                        pipes[i][0] = -1; 
+                    }
+                    else if(readed < 0){
+                        perror("Error reading the buffer\n");
+                    }
+                    else{
+                        request.direction = direc;
+                        request.player_num = i;
+                    }
+                }
+            }
+        }
+    return request;
+}
+
+
+void semaphoreStary(GameSync *sync_map){    //Inicializo los semaforos 
+    sem_init(&sync_map->to_print,1,0);
+    sem_init(&sync_map->end_print,1,0);
+    sem_init(&sync_map->master_mutex,1,1);
+    sem_init(&sync_map->state_mutex,1,1);
+    sem_init(&sync_map->reader_mutex,1,1);
+    sync_map->readers_counter = 0;
+}
+
+
+
+void fillBoard(int width, int height, GameState *state_map) {   //Llenar el tablero
     for(int i = 0; i < height; i++) {
         for(int j = 0; j < width; j++) {
            state_map->board_origin[i*width + j] = (rand() % 9) + 1; //para que quede entre 0 y 9
@@ -226,38 +299,42 @@ void fillBoard(int width, int height, GameState *state_map) {
     }
 }
 
-int randomInRange(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
-
-void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]){                                       //Creo los players, Casteo medio feo pero funciona
-    
-    int start_pos[9][2] = {{1,1},{2,2},{3,3},{4,4},{5,5},{6,6},{7,7},{8,8},{9,9}};
+void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2]) { //Creacion de los jugadores 
+    int start_pos[9][2] = {{1,1}, {2,2}, {3,3}, {4,4}, {5,5}, {6,6}, {7,7}, {8,8}, {9,9}};  //Array de posiciones iniciales 
     char w[10];
     char h[10];
-    sprintf(w,"%d",width);
-    sprintf(h,"%d",height);
     
-    for(int i = 0; i<players_added;i++){
+    snprintf(w, sizeof(w), "%d", width);   // Usar snprintf para evitar overflow
+    snprintf(h, sizeof(h), "%d", height);
+
+    for (int i = 0; i < players_added; i++) {
         pid_t pid = fork();
-        if(pid < 0){
+        
+        if (pid < 0) {
             perror("Error creating child process\n");
-            exit(0);
+            exit(EXIT_FAILURE);
         }
-        if(pid == 0){
-            //Set player parameters
-            char * args_list[] = {players[i],w,h, NULL};
+
+        if (pid == 0) { // Proceso hijo
+            // Configurar parámetros del jugador
+            char *args_list[] = {players[i], w, h, NULL};
             state_map->players_list[i].is_blocked = false;
-            strcpy(state_map->players_list[i].player_name, players[i]);
-            state_map->players_list[i].pos_x = start_pos[i][0];
-            state_map->players_list[i].pos_y = start_pos[i][1];
-            close(pipes[i][0]);         //The child ony writes on the pipe 
-            dup2(pipes[i][1],STDOUT_FILENO);    //Replace de stdout (fd: 1) wiith the created pipe 
-            execv(players[i],args_list);
+            strcpy(state_map->players_list[i].player_name, players[i]);     //cargo los parametros iniciles del jugador 
+            int x = state_map->players_list[i].pos_x = start_pos[i][0];     
+            int y = state_map->players_list[i].pos_y = start_pos[i][1];
+            state_map->board_origin[state_map->board_width*y + x] = i*(-1);
+            close(pipes[i][0]);                                             //Cierro la lectura de los pipes para los hijos 
+            dup2(pipes[i][1], STDOUT_FILENO);                               //Redirijo la salida standar al pipe osea fd = 1
+            execv(players[i], args_list);                                   //Llamo al archivo del hijo 
             perror("Player execv fail.\n");
-            exit(0);
+            exit(EXIT_FAILURE);
         }
-        close(pipes[i][1]);             //Close the witting endo of the pipe for the pearent
-        state_map->players_list[i].player_pid = pid;
+        close(pipes[i][1]);                                                 //Cierro el lado de la escritura del pipe para el padre 
+        state_map->players_list[i].player_pid = pid;                        //Guardo el pid del player en su lugar 
     }
+}
+
+int isValid(int y, int x, GameState *state_map) {              //Chequeo si la posicion esta en el tablero y si es un movimiento valido 
+    return x >= 0 && x < state_map->board_width &&
+           y >= 0 && y < state_map->board_height && state_map->board_origin[y*state_map->board_width + x] > 0;
 }
