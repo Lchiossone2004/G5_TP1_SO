@@ -9,6 +9,7 @@ int main(int argc, char *argv[]) {
     int seed = time(NULL);
     char *view = NULL;
     char *players[9] = {NULL};
+    int current_player = 0;
     int players_added = 0;
     while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1) {
         switch (opt){
@@ -151,7 +152,7 @@ int main(int argc, char *argv[]) {
     sem_wait(&sync_map->end_print);
     }
     while(!game_ended){
-        Request request = checkRequest(time_out,players_added,pipes, max_fd);       //Busca una request
+        Request request = checkRequest(time_out,players_added,pipes, max_fd, &current_player);       //Busca una request
         sem_wait(&sync_map->master_mutex);                                          //Esto es lo que dijo el profe para que no se desbarate todo 
         sem_wait(&sync_map->state_mutex);
         sem_post(&sync_map->master_mutex);
@@ -235,15 +236,14 @@ int processRequest(Request request, GameState *state_map){      //Agarra la requ
 
 
 
-Request checkRequest(struct timeval time_out, int players_added,int (*pipes)[2], int max_fd){           //Mira los pipes y busca requests (aca es donde falta el tema de un orden justo)
+Request checkRequest(struct timeval time_out, int players_added,int (*pipes)[2], int max_fd, int * current_player){           //Mira los pipes y busca requests (aca es donde falta el tema de un orden justo)
     Request request = { .direction = -1, .player_num = -1 }; // Inicializa correctamente
     fd_set read_fds;
     FD_ZERO(&read_fds);                                     //Setting up the pipe list for the select 
-    for(int j = 0; j <players_added; j++){                  //Fills up the pipe list
-        if (pipes[j][0] != -1) {  // Solo agregar si el descriptor sigue abierto
-            FD_SET(pipes[j][0], &read_fds);
+        if (pipes[*current_player][0] != -1) {  // Solo agregar si el descriptor sigue abierto
+            FD_SET(pipes[*current_player][0], &read_fds);
         }                     
-    }
+    
     int act = select(max_fd+1,&read_fds,NULL,NULL,&time_out);   //Select for each player (checking each player pipe)
         if(act == -1){
             perror("Error makeing the select");
@@ -255,27 +255,28 @@ Request checkRequest(struct timeval time_out, int players_added,int (*pipes)[2],
             printf("Timeout\n");
         }
         else{
-            for(int i = 0; i<players_added; i++){
-                if(FD_ISSET(pipes[i][0],&read_fds)){                //Checks if the i-player has written something on his pipe
+    
+                if(FD_ISSET(pipes[*current_player][0],&read_fds)){                //Checks if the current player has written something on his pipe
                     int direc;
                     memset(&direc, 0, sizeof(direc));
-                    int readed = read(pipes[i][0],&direc,sizeof(direc));
+                    int readed = read(pipes[*current_player][0],&direc,sizeof(direc));
                     if (readed == 0) {
-                        printf("Pipe cerrado por el jugador %d\n", i);
-                        close(pipes[i][0]); 
-                        FD_CLR(pipes[i][0], &read_fds);
-                        pipes[i][0] = -1; 
+                        printf("Pipe cerrado por el jugador %d\n", *current_player);
+                        close(pipes[*current_player][0]); 
+                        FD_CLR(pipes[*current_player][0], &read_fds);
+                        pipes[*current_player][0] = -1; 
                     }
                     else if(readed < 0){
                         perror("Error reading the buffer\n");
                     }
                     else{
                         request.direction = direc;
-                        request.player_num = i;
+                        request.player_num = *current_player;
                     }
                 }
-            }
+            
         }
+    *current_player = (*current_player + 1) % players_added; // itero el jugador (si era el último, vuelvo al primero)
     return request;
 }
 
