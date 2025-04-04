@@ -7,6 +7,11 @@ int selectDir(int x, int y);                                                    
 
 int main(int argc, char *argv[])
 {
+if (argc < 3) {
+    fprintf(stderr, "Error: falta argumento.\n");
+    return 1;
+}
+
 
     int width = atoi(argv[1]);  // Playing board width
     int height = atoi(argv[2]); // Playing board height
