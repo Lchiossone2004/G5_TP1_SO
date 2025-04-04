@@ -7,11 +7,11 @@ int selectDir(int x, int y);                                                    
 
 int main(int argc, char *argv[])
 {
-if (argc < 3) {
-    fprintf(stderr, "Error: falta argumento.\n");
-    return 1;
-}
-
+    if (argc < 3)
+    {
+        fprintf(stderr, "Error: falta argumento.\n");
+        return 1;
+    }
 
     int width = atoi(argv[1]);  // Playing board width
     int height = atoi(argv[2]); // Playing board height
@@ -58,9 +58,10 @@ if (argc < 3) {
         { // Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
         }
-        sleep(1.5);
+        sleep(2);
     }
     closeMemory(state_map, sync_map, state_fd, sync_fd, width, height);
+    close(1);
     return 0;
 }
 

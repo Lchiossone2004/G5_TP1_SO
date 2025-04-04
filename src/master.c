@@ -1,4 +1,5 @@
 #include "master.h"
+#include <unistd.h>
 
 int main(int argc, char *argv[])
 {
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
             }
             break;
         case 'w':
-            int width = atoi(optarg);
+            width = atoi(optarg);
             if (width < 10)
             {
                 perror("Invalid width value, must be higher than 9.\n");
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
             }
             break;
         case 'h':
-            int height = atoi(optarg);
+            height = atoi(optarg);
             if (height < 10)
             {
                 perror("Invalid height value, must be higher than 9.\n");
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
             }
             break;
         case 'd':
-            int delay = atoi(optarg);
+            delay = atoi(optarg);
             if (delay < 0)
             {
                 perror("Invalid delay value, must be positive.\n");
@@ -55,7 +56,7 @@ int main(int argc, char *argv[])
             }
             break;
         case 't':
-            int timeout = atoi(optarg);
+            timeout = atoi(optarg);
             if (timeout < 10)
             {
                 perror("Invalid timeout value, must be higher than 9.\n");
@@ -176,6 +177,10 @@ int main(int argc, char *argv[])
     int priority = 0;
     bool all_blocked = false;
     bool game_ended = false;
+
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = delay * 1000000L; // 1 millisecond = 1,000,000 nanoseconds
     // Pre game
     system("clear");
     // Game Cycle
@@ -184,20 +189,24 @@ int main(int argc, char *argv[])
         sem_post(&sync_map->to_print); // imagein inicial
         sem_wait(&sync_map->end_print);
     }
+
     while (!game_ended)
     {
+        nanosleep(&ts, NULL);                                                                    // sleeps for 1000 microseconds = 1 millisecond
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player); // Busca una request
         sem_wait(&sync_map->master_mutex);                                                       // Esto es lo que dijo el profe para que no se desbarate todo
         sem_wait(&sync_map->state_mutex);
         sem_post(&sync_map->master_mutex);
-
-        if (processRequest(request, state_map) != 0)
-        { // Procesamos la request y vemos si es un movimiento valido o no
-            state_map->players_list[request.player_num].invalid_moves++;
-        }
-        else
+        if (request.player_num != -1)
         {
-            state_map->players_list[request.player_num].valid_moves++;
+            if (processRequest(request, state_map) != 0)
+            { // Procesamos la request y vemos si es un movimiento valido o no
+                state_map->players_list[request.player_num].invalid_moves++;
+            }
+            else
+            {
+                state_map->players_list[request.player_num].valid_moves++;
+            }
         }
         all_blocked = true;
         for (int player = 0; player < players_added; player++)
@@ -219,6 +228,7 @@ int main(int argc, char *argv[])
         }
         sem_post(&sync_map->state_mutex);
     }
+
     if (view != NULL)
     {
         sem_wait(&sync_map->state_mutex); // Esto ultimo es para que la view pueda exitear de manera corecta y no se quede trabada
@@ -245,7 +255,7 @@ int main(int argc, char *argv[])
 
 void isBlocked(GameState *state_map, int player_number)
 { // Chequea si el jugador esta bloqueado
-    bool blocked = true;
+    state_map->players_list[player_number].is_blocked = true;
     for (int fil = -1; fil < 2; fil++)
     {
         for (int col = -1; col < 2; col++)
@@ -254,11 +264,10 @@ void isBlocked(GameState *state_map, int player_number)
             int y = state_map->players_list[player_number].pos_y;
             if ((fil != 0 || col != 0) && isValid(fil + y, col + x, state_map))
             {
-                return;
+                state_map->players_list[player_number].is_blocked = false;
             }
         }
     }
-    state_map->players_list[player_number].is_blocked = blocked;
 }
 
 int processRequest(Request request, GameState *state_map)
@@ -285,11 +294,10 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
     Request request = {.direction = -1, .player_num = -1}; // Inicializa correctamente
     fd_set read_fds;
     FD_ZERO(&read_fds); // Setting up the pipe list for the select
-    if (pipes[*current_player][0] != -1)
+    for (int i = 0; i < players_added; i++)
     { // Solo agregar si el descriptor sigue abierto
-        FD_SET(pipes[*current_player][0], &read_fds);
+        FD_SET(pipes[i][0], &read_fds);
     }
-
     int act = select(max_fd + 1, &read_fds, NULL, NULL, &time_out); // Select for each player (checking each player pipe)
     if (act == -1)
     {
@@ -301,11 +309,11 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
         request.direction = -1;
         request.player_num = -1;
         printf("Timeout\n");
+        return request;
     }
     else
     {
-
-        if (FD_ISSET(pipes[*current_player][0], &read_fds))
+        if (pipes[*current_player][0] != -1 && FD_ISSET(pipes[*current_player][0], &read_fds))
         { // Checks if the current player has written something on his pipe
             int direc;
             memset(&direc, 0, sizeof(direc));
