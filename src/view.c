@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
         {
             printf("%s  \x1b[0m ", colors[i]);                               // Prints the color of the plyer
             printf("Player: %s | ", state_map->players_list[i].player_name); // Prints player name
-            printf("Score: %d | ", state_map->players_list[i].score);        // Prints player score
+            printf("Score: %3d | ", state_map->players_list[i].score);       // Prints player score
             printf("Coordinates(x,y): (%d,%d)\n", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
         }
         sem_post(&sync_map->end_print); // Tells master it finished printing

@@ -18,7 +18,7 @@ TBOT = $(BIN_DIR)/tbot
 # Source files for each program
 BOT_SRC = $(SRC_DIR)/bot.c $(SRC_DIR)/sharedMem.c
 VIEW_SRC = $(SRC_DIR)/view.c $(SRC_DIR)/sharedMem.c
-MASTER_SRC = $(SRC_DIR)/master.c $(SRC_DIR)/sharedMem.c
+MASTER_SRC = $(SRC_DIR)/master.c $(SRC_DIR)/sharedMem.c $(SRC_DIR)/masterLib.c
 
 TBOT_SRC = $(SRC_DIR)/tbot.c $(SRC_DIR)/sharedMem.c
 

@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     }
 
     unsigned char direction;
-    while (!state_map->players_list[playerNumber].is_blocked)
+    while (!state_map->players_list[playerNumber].is_blocked && !state_map->game_ended)
     {
         sem_wait(&sync_map->master_mutex); // Mutex of master
         sem_post(&sync_map->master_mutex); // Mutex of master
@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
         }
         sem_post(&sync_map->reader_mutex); // Frees other bots
         sem_post(&sync_map->master_mutex); // Frees the master
-
         if (write(1, &direction, sizeof(direction)) == -1)
         { // Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
