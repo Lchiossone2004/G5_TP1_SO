@@ -1,7 +1,7 @@
 #include "sharedMem.h"
 
 void createMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync **sync_map, int width, int height)
-{ // Creo la memoria compratida
+{ 
     *state_fd = shm_open(GAME_MEM, O_CREAT | O_RDWR, 0644);
     if (*state_fd == -1)
     {
@@ -45,7 +45,7 @@ void clearMemory(GameState *state_map, GameSync *sync_map, int state_fd, int syn
 }
 void openMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync **sync_map, int width, int height)
 {
-    *state_fd = shm_open("/game_state", O_RDONLY, 0644); // Opens and maps the "game_state" shared memmory
+    *state_fd = shm_open("/game_state", O_RDONLY, 0644); // Opens and maps the "game_state" shared memory
     if (*state_fd == -1)
     {
         perror("game state shared memmor fail:");
@@ -53,7 +53,7 @@ void openMemory(int *state_fd, int *sync_fd, GameState **state_map, GameSync **s
     }
     *state_map = (GameState *)mmap(NULL, sizeof(GameState) + sizeof(int) * (width * height), PROT_READ, MAP_SHARED, *state_fd, 0);
 
-    *sync_fd = shm_open("/game_sync", O_RDWR, 0666); // Opens and maps the "game_state" shared memmory
+    *sync_fd = shm_open("/game_sync", O_RDWR, 0666); // Opens and maps the "game_state" shared memory
     if (*sync_fd == -1)
     {
         perror("game sync shared memmor fail.\n");

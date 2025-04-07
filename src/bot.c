@@ -98,7 +98,7 @@ int inBounds(int y, int x, GameState *state_map)
 }
 
 int selectDir(int fil, int col)
-{ // Returns the direction based on the adjacent x,y that has teh highes value
+{ // Returns the direction based on the adjacent x,y that has the highest value
     static const int directions[3][3] = {
         {7, 0, 1},
         {6, -1, 2},

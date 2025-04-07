@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     GameState *state_map;
     int sync_fd;
     GameSync *sync_map;
-    createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height); // Creo la memoria compartida
+    createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height); 
 
     // Setting up the game
     system("clear");
@@ -112,6 +112,7 @@ int main(int argc, char *argv[])
     {
         printf("Player: %s\n", players[i]);
     }
+    
     // Start the Semaphores
     semaphoreStary(sync_map);
 
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
     int pipes[players_added][2];
     int max_fd = 0;
     for (int i = 0; i < players_added; i++)
-    { // Creacion de pipdes para los hijos
+    { // Creation of the pipes for children
         if (pipe(pipes[i]) == -1)
         {
             perror("Failure creating pipe.\n");
@@ -149,14 +150,14 @@ int main(int argc, char *argv[])
     }
 
     // Creation of the players
-    createPlayers(state_map, players_added, width, height, players, pipes, error_report); // Creo los jugadores
+    createPlayers(state_map, players_added, width, height, players, pipes, error_report);
     state_map->num_of_players = players_added;
     bool invalid_input = false;
 
     // Creation of the view
 
     if (view != NULL)
-    { // Seteo de view
+    { // Setting view
         char w[10];
         char h[10];
         sprintf(w, "%d", width);
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
         sem_post(&sync_map->to_print);
     }
     // Pipe management
-    struct timeval time_out; // Estructuras necesarias para el chequeo de pipdes y juego
+    struct timeval time_out; // Structs required for pipe checking and game logic
     time_out.tv_sec = timeout;
     time_out.tv_usec = 0;
     bool all_blocked = false;
@@ -210,13 +211,13 @@ int main(int argc, char *argv[])
     // Game Cycle
     if (view != NULL && !invalid_input)
     {
-        sem_post(&sync_map->to_print); // imagein inicial
+        sem_post(&sync_map->to_print); // Initial image
         sem_wait(&sync_map->end_print);
     }
 
     while (!game_ended && !invalid_input)
     {
-        nanosleep(&ts, NULL); // Pequeño delay
+        nanosleep(&ts, NULL); // Short delay
 
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
         printf("Turno de prioridad para jugador: %d\n", current_player);
@@ -239,11 +240,11 @@ int main(int argc, char *argv[])
         }
         else if (request.player_num == -2)
         {
-            // Timeout: ningún jugador respondió
+            // Timeout: no players answered
             game_ended = true;
         }
 
-        // Recién ahora chequeamos si todos están bloqueados
+        // Checking if players are blocked
 
         if (view != NULL)
         {
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
 
     if (view != NULL && !invalid_input)
     {
-        sem_wait(&sync_map->state_mutex); // Esto ultimo es para que la view pueda exitear de manera corecta y no se quede trabada
+        sem_wait(&sync_map->state_mutex); // So view can exit properly
         sem_post(&sync_map->state_mutex);
         sem_post(&sync_map->to_print);
         sem_wait(&sync_map->end_print);

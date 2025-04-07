@@ -1,7 +1,7 @@
 #include "masterLib.h"
 
 void isBlocked(GameState *state_map, int player_number)
-{ // Chequea si el jugador esta bloqueado
+{ 
     state_map->players_list[player_number].is_blocked = true;
     for (int fil = -1; fil < 2; fil++)
     {
@@ -18,7 +18,7 @@ void isBlocked(GameState *state_map, int player_number)
 }
 
 int processRequest(Request request, GameState *state_map)
-{ // Agarra la request y actualiza la psoicion del jugador y el tablero
+{ //Updates board and player's position
     const int delta_x[8] = {0, 1, 1, 1, 0, -1, -1, -1};
     const int delta_y[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int new_x = state_map->players_list[request.player_num].pos_x + delta_x[request.direction];
@@ -38,12 +38,12 @@ int processRequest(Request request, GameState *state_map)
 }
 
 Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2], int max_fd, int *current_player)
-{                                                          // Mira los pipes y busca requests (aca es donde falta el tema de un orden justo)
-    Request request = {.direction = -1, .player_num = -1}; // Inicializa correctamente
+{                                                          // Checks pipes and looks for requests (aca es donde falta el tema de un orden justo)
+    Request request = {.direction = -1, .player_num = -1};
     fd_set read_fds;
     FD_ZERO(&read_fds); // Setting up the pipe list for the select
     for (int i = 0; i < players_added; i++)
-    { // Solo agregar si el descriptor sigue abierto
+    { // Add only if file descriptor is open
         FD_SET(pipes[i][0], &read_fds);
     }
     int act = select(max_fd + 1, &read_fds, NULL, NULL, &time_out); // Select for each player (checking each player pipe)
@@ -80,12 +80,12 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
             }
         }
     }
-    *current_player = (*current_player + 1) % players_added; // itero el jugador (si era el último, vuelvo al primero)
+    *current_player = (*current_player + 1) % players_added; // Iteration of player (if last, goes back to first)
     return request;
 }
 
 void semaphoreStary(GameSync *sync_map)
-{ // Inicializo los semaforos
+{ // Initialize semaphores
     sem_init(&sync_map->to_print, 1, 0);
     sem_init(&sync_map->end_print, 1, 0);
     sem_init(&sync_map->master_mutex, 1, 1);
@@ -95,23 +95,23 @@ void semaphoreStary(GameSync *sync_map)
 }
 
 void fillBoard(int width, int height, GameState *state_map)
-{ // Llenar el tablero
+{ 
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            state_map->board_origin[i * width + j] = (rand() % 9) + 1; // para que quede entre 0 y 9
+            state_map->board_origin[i * width + j] = (rand() % 9) + 1; // So it's between 0 and 9
         }
     }
 }
 
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2])
-{                                                                                                   // Creacion de los jugadores
-    int start_pos[9][2] = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 9}}; // Array de posiciones iniciales
+{                                                                                                   
+    int start_pos[9][2] = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 9}}; // Initial positions
     char w[10];
     char h[10];
 
-    snprintf(w, sizeof(w), "%d", width); // Usar snprintf para evitar overflow
+    snprintf(w, sizeof(w), "%d", width); // Snprintf to avoid overflow
     snprintf(h, sizeof(h), "%d", height);
 
     for (int i = 0; i < players_added; i++)
@@ -125,32 +125,32 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
         }
 
         if (pid == 0)
-        { // Proceso hijo
+        { // Child process
             close(error_report[0]);
-            // Configurar parámetros del jugador
+            // Player's parameters
             char *args_list[] = {players[i], w, h, NULL};
             state_map->players_list[i].is_blocked = false;
-            strcpy(state_map->players_list[i].player_name, players[i]); // cargo los parametros iniciles del jugador
+            strcpy(state_map->players_list[i].player_name, players[i]); 
             int x = state_map->players_list[i].pos_x = start_pos[i][0];
             int y = state_map->players_list[i].pos_y = start_pos[i][1];
             state_map->board_origin[state_map->board_width * y + x] = i * (-1);
             state_map->players_list[i].score = 0;
-            close(pipes[i][0]);               // Cierro la lectura de los pipes para los hijos
-            dup2(pipes[i][1], STDOUT_FILENO); // Redirijo la salida standar al pipe osea fd = 1
-            execv(players[i], args_list);     // Llamo al archivo del hijo
+            close(pipes[i][0]);               
+            dup2(pipes[i][1], STDOUT_FILENO); // Redirect standard output to pipe
+            execv(players[i], args_list);     // Call child's file
             perror("Player execv fail");
             int error = -1;
             write(error_report[1], &error, sizeof(error));
             exit(EXIT_FAILURE);
         }
-        close(pipes[i][1]);                          // Cierro el lado de la escritura del pipe para el padre
-        state_map->players_list[i].player_pid = pid; // Guardo el pid del player en su lugar
+        close(pipes[i][1]);                      
+        state_map->players_list[i].player_pid = pid;
     }
     close(error_report[1]);
 }
 
 int isValid(int y, int x, GameState *state_map)
-{ // Chequeo si la posicion esta en el tablero y si es un movimiento valido
+{ 
     return x >= 0 && x < state_map->board_width &&
            y >= 0 && y < state_map->board_height && state_map->board_origin[y * state_map->board_width + x] > 0;
 }
