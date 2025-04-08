@@ -34,8 +34,7 @@ int main(int argc, char *argv[])
         "\033[48;2;178;114;139m", // Dark dusty pink
         "\033[48;2;149;106;165m", // Dark lavender
         "\033[48;2;204;133;126m", // Darker light coral
-        "\033[48;2;89;141;152m"   // Dark muted teal
-    };
+        "\033[48;2;89;141;152m"};
     const char *board_colors[] = {
         "\033[48;2;220;224;193m", // Pale sage (for odd cells)
         "\033[48;2;178;190;181m"  // Soft stone green (for even cells)
@@ -84,7 +83,8 @@ int main(int argc, char *argv[])
             printf("%s  \x1b[0m ", colors[i]);                               // Prints the color of the player
             printf("Player: %s | ", state_map->players_list[i].player_name); // Prints player's name
             printf("Score: %3d | ", state_map->players_list[i].score);       // Prints player's score
-            printf("Coordinates(x,y): (%d,%d)\n", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
+            printf("Coordinates(x,y): (%d,%d) | ", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
+            printf("%s\n", state_map->players_list[i].is_blocked ? "is blocked" : "");
         }
         sem_post(&sync_map->end_print); // Tells master it finished printing
     }
