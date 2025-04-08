@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     GameState *state_map;
     int sync_fd;
     GameSync *sync_map;
-    createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height); 
+    createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height);
 
     // Setting up the game
     system("clear");
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     {
         printf("Player: %s\n", players[i]);
     }
-    
+
     // Start the Semaphores
     semaphoreStary(sync_map);
 
@@ -169,16 +169,19 @@ int main(int argc, char *argv[])
             perror("Error connecting the view\n");
             exit(EXIT_FAILURE);
         }
-        if (pid == 0)
+        else if (pid == 0)
         {
             close(error_report[0]);
             execv(view, args_list);
             perror("View execv fail");
             int error = -1;
-            write(error_report[1], &error, sizeof(error));
+            ssize_t bytes_written = write(error_report[1], &error, sizeof(error));
+            if (bytes_written == -1)
+            {
+                perror("Write to pipe failed");
+            }
             exit(EXIT_FAILURE);
         }
-        close(error_report[1]);
     }
     sleep(2);
     // File path error management
@@ -192,6 +195,7 @@ int main(int argc, char *argv[])
         state_map->game_ended = true;
         sem_post(&sync_map->to_print);
     }
+    close(error_report[1]); // Closing of the error pipe, no more child process will be created from this point foward
     // Pipe management
     struct timeval time_out; // Structs required for pipe checking and game logic
     time_out.tv_sec = timeout;
@@ -203,7 +207,6 @@ int main(int argc, char *argv[])
     ts.tv_sec = 0;
     ts.tv_nsec = delay * 1000000L; // 1 millisecond = 1,000,000 nanoseconds
     // Pre game
-    sleep(2);
     if (!invalid_input)
     {
         system("clear");

@@ -1,7 +1,7 @@
 #include "masterLib.h"
 
 void isBlocked(GameState *state_map, int player_number)
-{ 
+{
     state_map->players_list[player_number].is_blocked = true;
     for (int fil = -1; fil < 2; fil++)
     {
@@ -18,7 +18,7 @@ void isBlocked(GameState *state_map, int player_number)
 }
 
 int processRequest(Request request, GameState *state_map)
-{ //Updates board and player's position
+{ // Updates board and player's position
     const int delta_x[8] = {0, 1, 1, 1, 0, -1, -1, -1};
     const int delta_y[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
     int new_x = state_map->players_list[request.player_num].pos_x + delta_x[request.direction];
@@ -38,7 +38,7 @@ int processRequest(Request request, GameState *state_map)
 }
 
 Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2], int max_fd, int *current_player)
-{                                                          // Checks pipes and looks for requests (aca es donde falta el tema de un orden justo)
+{ // Checks pipes and looks for requests (aca es donde falta el tema de un orden justo)
     Request request = {.direction = -1, .player_num = -1};
     fd_set read_fds;
     FD_ZERO(&read_fds); // Setting up the pipe list for the select
@@ -95,7 +95,7 @@ void semaphoreStary(GameSync *sync_map)
 }
 
 void fillBoard(int width, int height, GameState *state_map)
-{ 
+{
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
@@ -106,7 +106,7 @@ void fillBoard(int width, int height, GameState *state_map)
 }
 
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2])
-{                                                                                                   
+{
     int start_pos[9][2] = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 9}}; // Initial positions
     char w[10];
     char h[10];
@@ -130,12 +130,12 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
             // Player's parameters
             char *args_list[] = {players[i], w, h, NULL};
             state_map->players_list[i].is_blocked = false;
-            strcpy(state_map->players_list[i].player_name, players[i]); 
+            strcpy(state_map->players_list[i].player_name, players[i]);
             int x = state_map->players_list[i].pos_x = start_pos[i][0];
             int y = state_map->players_list[i].pos_y = start_pos[i][1];
             state_map->board_origin[state_map->board_width * y + x] = i * (-1);
             state_map->players_list[i].score = 0;
-            close(pipes[i][0]);               
+            close(pipes[i][0]);
             dup2(pipes[i][1], STDOUT_FILENO); // Redirect standard output to pipe
             execv(players[i], args_list);     // Call child's file
             perror("Player execv fail");
@@ -143,14 +143,13 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
             write(error_report[1], &error, sizeof(error));
             exit(EXIT_FAILURE);
         }
-        close(pipes[i][1]);                      
+        close(pipes[i][1]);
         state_map->players_list[i].player_pid = pid;
     }
-    close(error_report[1]);
 }
 
 int isValid(int y, int x, GameState *state_map)
-{ 
+{
     return x >= 0 && x < state_map->board_width &&
            y >= 0 && y < state_map->board_height && state_map->board_origin[y * state_map->board_width + x] > 0;
 }
