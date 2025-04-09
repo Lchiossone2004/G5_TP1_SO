@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     int sync_fd;
     GameSync *sync_map;
     createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height);
-
+    semaphoreStary(sync_map); // Semaphores initializer
     // Setting up the game
     system("clear");
     printf("Bord--> Width: %d | Height: %d\n", width, height);
@@ -112,9 +112,6 @@ int main(int argc, char *argv[])
     {
         printf("Player: %s\n", players[i]);
     }
-
-    // Start the Semaphores
-    semaphoreStary(sync_map);
 
     // Creating the board
     srand(seed); // Set the inputed seed, if it's not inputed it will be time(NULL)
@@ -223,8 +220,6 @@ int main(int argc, char *argv[])
         nanosleep(&ts, NULL); // Short delay
 
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
-        printf("Turno de prioridad para jugador: %d\n", current_player);
-        printf("Procesando request: player %d, dirección %d\n", request.player_num, request.direction);
 
         sem_wait(&sync_map->master_mutex);
         sem_wait(&sync_map->state_mutex);
@@ -283,7 +278,10 @@ int main(int argc, char *argv[])
     for (int i = 0; i < players_added; i++)
     { // Waits for the players to end
         wait(&status);
-        printf("Player %d, exited with status [%d] and a score of %d\n", i, status, state_map->players_list[i].score);
+        printf("Player %d, exited with status [%d] wth a score of %3d. ", i, status, state_map->players_list[i].score);
+        int valid = state_map->players_list[i].valid_moves;
+        int invalid = state_map->players_list[i].invalid_moves;
+        printf(" %2d moves, %2d valid, %2d invalid.\n", valid + invalid, valid, invalid);
     }
     if (view != NULL)
     { // Waits for the view to end

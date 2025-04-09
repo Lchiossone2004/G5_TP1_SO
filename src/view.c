@@ -1,7 +1,18 @@
 #include <string.h> // For strcpy
 #include "sharedMem.h"
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdio.h>
 
 void clearScreen(); // Cleans the screen
+
+void handle_resize(int sig)
+{
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    system("clear");
+}
 
 int main(int argc, char *argv[])
 {
@@ -47,46 +58,65 @@ int main(int argc, char *argv[])
     {
         clearScreen();
         sem_wait(&sync_map->to_print); // Tells master it is going to print
-        for (int row = 0; row < height; row++)
+        printf("\t\t\t| CHOMPS CHAMPS |\n");
+        printf("\t\t\t-----------------\n");
+
+        for (int row = -1; row < height; row++)
         { // Rows
+            if (row != -1)
+            {
+                printf("R:%-2d ", row + 1);
+            }
+            else
+            {
+                printf("    ");
+            }
             for (int col = 0; col < width; col++)
             { // Columns
-                position_value = state_map->board_origin[col + row * width];
-                if (position_value <= 0)
+                if (row == -1)
                 {
-                    for (int i = 0; i < state_map->num_of_players && !player_found; i++)
-                    {
-                        if (position_value == i * (-1))
-                        {
-                            if (col == state_map->players_list[i].pos_x && row == state_map->players_list[i].pos_y)
-                            {
-                                printf("%s* %2d *\033[0m", head_colors[i], position_value); // Prints the player's head with color
-                            }
-                            else
-                            {
-                                printf("%s  %2d  \033[0m", colors[i], position_value); // Prints the player with color
-                            }
-                            player_found = 1;
-                        }
-                    }
+                    printf(" H:%-2d ", col + 1);
                 }
                 else
                 {
-                    printf("%s  %2d  \033[0m", board_colors[(row + col) % 2], position_value);
+                    position_value = state_map->board_origin[col + row * width];
+                    if (position_value <= 0)
+                    {
+                        for (int i = 0; i < state_map->num_of_players && !player_found; i++)
+                        {
+                            if (position_value == i * (-1))
+                            {
+                                if (col == state_map->players_list[i].pos_x && row == state_map->players_list[i].pos_y)
+                                {
+                                    printf("%s* %2d *\033[0m", head_colors[i], position_value); // Prints the player's head with color
+                                }
+                                else
+                                {
+                                    printf("%s  %2d  \033[0m", colors[i], position_value); // Prints the player with color
+                                }
+                                player_found = 1;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        printf("%s  %2d  \033[0m", board_colors[(row + col) % 2], position_value);
+                    }
+                    player_found = 0;
                 }
-                player_found = 0;
             }
             printf("\n");
         }
         for (int i = 0; i < state_map->num_of_players; i++)
         {
-            printf("%s  \x1b[0m ", colors[i]);                               // Prints the color of the player
-            printf("Player: %s | ", state_map->players_list[i].player_name); // Prints player's name
-            printf("Score: %3d | ", state_map->players_list[i].score);       // Prints player's score
+            printf("%s  \x1b[0m ", colors[i]);                                  // Prints the color of the player
+            printf("Player: %-16s | ", state_map->players_list[i].player_name); // Prints player's name
+            printf("Score: %3d | ", state_map->players_list[i].score);          // Prints player's score
             printf("Coordinates(x,y): (%d,%d) | ", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
             printf("%s\n", state_map->players_list[i].is_blocked ? "is blocked" : "");
         }
         sem_post(&sync_map->end_print); // Tells master it finished printing
+        signal(SIGWINCH, handle_resize);
     }
 
     closeMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Cleaning
