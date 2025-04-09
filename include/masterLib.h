@@ -21,6 +21,7 @@ typedef struct
     int player_num;
 } Request;
 
+void processArguments(int argc, char *argv[], int *width, int *height, int *delay, int *timeout, int *seed, char **view, char **players, int *players_added);
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2]);
 void fillBoard(int width, int height, GameState *state_map);
 void semaphoreStary(GameSync *sync_map);
