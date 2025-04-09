@@ -1,25 +1,8 @@
-#define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>      // For O_* constants
-#include <sys/mman.h>   // For shm_open, mmap
-#include <unistd.h>     // For ftruncate, close
-#include <string.h>     // For strcpy
-#include <stdbool.h>    // For bool
-#include "structs.h"
-#include <time.h>
-#include <sys/wait.h>   //To wait
-#include <sys/types.h>
-#include <sys/select.h>
-#include "sharedMem.h"
+#include "masterLib.h"
+#include <unistd.h>
 
-
-
-void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]);
-void fillBoard(int width, int height, GameState *state_map);
-void semaphoreStary(GameSync *sync_map);
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int opt;
     int width = 10;
     int height = 10;
@@ -28,236 +11,286 @@ int main(int argc, char *argv[]) {
     int seed = time(NULL);
     char *view = NULL;
     char *players[9] = {NULL};
+    int current_player = 0;
     int players_added = 0;
-    while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1) {
-        switch (opt){
-            case 'p':
-                if(!optarg || optarg[0] == '-'){
-                    perror("Must add player.");
-                    exit(EXIT_FAILURE);
-                }
-                players[players_added++] = optarg;
-                printf("Player added: %s\n", optarg);
-                while (optind < argc && argv[optind][0] != '-') {
-                    players[players_added++] = argv[optind++];
-                    printf("Player added: %s\n", players[players_added - 1]);
-                }
-                break;
-            case 'w':
-                int width = atoi(optarg);
-                if (width < 10) {
-                    perror("Invalid width value, must be higher than 9.\n");
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            case 'h':
-                int height = atoi(optarg);
-                if (height < 10) {
-                    perror("Invalid height value, must be higher than 9.\n");
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            case 'd':
-                int delay = atoi(optarg);
-                if (delay < 0) {
-                    perror("Invalid delay value, must be positive.\n");
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            case 't':
-                int timeout = atoi(optarg);
-                if (timeout < 10) {
-                    perror("Invalid timeout value, must be higher than 9.\n");
-                    exit(EXIT_FAILURE);
-                }
-                break;
-            case 's':
-                seed = atoi(optarg);
-                break;
-            case 'v':
-                view = optarg;
-                break;
-            case '?':
-                if (optopt == 'p' || optopt == 'w' || optopt == 'h' || optopt == 'd' || optopt == 't' || optopt == 's' || optopt == 'v'){
-                    fprintf(stderr, "Error: Option -%c requires a value.\n", optopt);
-                } else {
-                    perror("Error: Invalid argument");
-                }
+    while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1)
+    {
+        switch (opt)
+        {
+        case 'p':
+            if (!optarg || optarg[0] == '-')
+            {
+                perror("Must add player.");
                 exit(EXIT_FAILURE);
-            default:
-                fprintf(stderr, "Error inesperado.\n");
+            }
+            players[players_added++] = optarg;
+            printf("Player added: %s\n", optarg);
+            while (optind < argc && argv[optind][0] != '-')
+            {
+                players[players_added++] = argv[optind++];
+                printf("Player added: %s\n", players[players_added - 1]);
+            }
+            break;
+        case 'w':
+            width = atoi(optarg);
+            if (width < 10)
+            {
+                perror("Invalid width value, must be higher than 9.\n");
                 exit(EXIT_FAILURE);
+            }
+            break;
+        case 'h':
+            height = atoi(optarg);
+            if (height < 10)
+            {
+                perror("Invalid height value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'd':
+            delay = atoi(optarg);
+            if (delay < 0)
+            {
+                perror("Invalid delay value, must be positive.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 't':
+            timeout = atoi(optarg);
+            if (timeout < 10)
+            {
+                perror("Invalid timeout value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 's':
+            seed = atoi(optarg);
+            break;
+        case 'v':
+            view = optarg;
+            break;
+        case '?':
+            if (optopt == 'p' || optopt == 'w' || optopt == 'h' || optopt == 'd' || optopt == 't' || optopt == 's' || optopt == 'v')
+            {
+                fprintf(stderr, "Error: Option -%c requires a value.\n", optopt);
+            }
+            else
+            {
+                perror("Error: Invalid argument");
+            }
+            exit(EXIT_FAILURE);
+        default:
+            fprintf(stderr, "Error inesperado.\n");
+            exit(EXIT_FAILURE);
         }
     }
-    if (players_added == 0) {
+    if (players_added == 0)
+    {
         perror("Error: At least one player must be specified using -p.\n");
         exit(EXIT_FAILURE);
     }
-    if (players_added > 9) {
+    if (players_added > 9)
+    {
         perror("Error: At most 9 players can be specified using -p.\n");
         exit(EXIT_FAILURE);
     }
 
-    //Creation of shared memory
+    // Creation of shared memory
 
     int state_fd;
     GameState *state_map;
     int sync_fd;
     GameSync *sync_map;
-    createMemory(&state_fd,&sync_fd,&state_map,&sync_map,width,height);
+    createMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height);
+    semaphoreStary(sync_map); // Semaphores initializer
+    // Setting up the game
+    system("clear");
+    printf("Bord--> Width: %d | Height: %d\n", width, height);
+    printf("Game Settings--> Delay: %d | Seed: %d | View %s\n", delay, seed, view);
+    printf("Number of players--> %d\n", players_added);
+    for (int i = 0; i < players_added; i++)
+    {
+        printf("Player: %s\n", players[i]);
+    }
 
-    //Setting up the game
-    
-        //Start the Semaphores
-    semaphoreStary(sync_map);
-
-        //Creating the board
-    srand(seed);                                //Set the inputed seed, if it's not inputed it will be time(NULL) 
-    fillBoard(width, height,state_map);
+    // Creating the board
+    srand(seed); // Set the inputed seed, if it's not inputed it will be time(NULL)
+    fillBoard(width, height, state_map);
     state_map->board_height = height;
     state_map->board_width = width;
     state_map->game_ended = false;
 
-    //Creation of child procesess
+    // Creation of child procesess
 
-        //Creation of the view
-
-    if(view != NULL){
-        printf("hay view\n");
-        char w[10];
-        char h[10];
-        sprintf(w,"%d",width);
-        sprintf(h,"%d",height);
-        char * args_list[] = {view,w,h, NULL};
-        pid_t pid = fork();
-        if(pid < 0){
-            perror("Error connecting the view\n");
-            exit(EXIT_FAILURE);
-        }
-        if(pid == 0){
-            execv(view,args_list);
-            perror("Execv fail.\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    sem_post(&sync_map->A);
-    sem_wait(&sync_map->B);
-    sem_wait(&sync_map->A);
-
-        //Creation of the pipes for players (one for each)
+    // Creation of the pipes for players (one for each)
 
     int pipes[players_added][2];
     int max_fd = 0;
-    for(int i = 0; i < players_added; i++){
-        if(pipe(pipes[i]) == -1){
+    for (int i = 0; i < players_added; i++)
+    { // Creation of the pipes for children
+        if (pipe(pipes[i]) == -1)
+        {
             perror("Failure creating pipe.\n");
             return 1;
         }
-        if(pipes[i][0] > max_fd){
+        if (pipes[i][0] > max_fd)
+        {
             max_fd = pipes[i][0];
         }
     }
 
-        //Creation of the players
-    createPlayers(state_map,players_added,width,height,players,pipes);
+    int error_report[2]; // To see if any file fails
+    if (pipe(error_report) == -1)
+    {
+        perror("Error creating error_report pipe\n");
+        exit(EXIT_FAILURE);
+    }
 
-    //Pipe management
-    struct timeval time_out;
+    // Creation of the players
+    createPlayers(state_map, players_added, width, height, players, pipes, error_report);
+    state_map->num_of_players = players_added;
+    bool invalid_input = false;
+
+    // Creation of the view
+
+    if (view != NULL)
+    { // Setting view
+        char w[10];
+        char h[10];
+        sprintf(w, "%d", width);
+        sprintf(h, "%d", height);
+        char *args_list[] = {view, w, h, NULL};
+        pid_t pid = fork();
+        if (pid < 0)
+        {
+            perror("Error connecting the view\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0)
+        {
+            close(error_report[0]);
+            execv(view, args_list);
+            perror("View execv fail");
+            int error = -1;
+            ssize_t bytes_written = write(error_report[1], &error, sizeof(error));
+            if (bytes_written == -1)
+            {
+                perror("Write to pipe failed");
+            }
+            exit(EXIT_FAILURE);
+        }
+    }
+    sleep(2);
+    // File path error management
+    int flags = fcntl(error_report[0], F_GETFL, 0);
+    fcntl(error_report[0], F_SETFL, flags | O_NONBLOCK); // Making it so that it does not block the process
+    int error = 0;
+    read(error_report[0], &error, sizeof(error));
+    if (error == -1)
+    {
+        invalid_input = true;
+        state_map->game_ended = true;
+        sem_post(&sync_map->to_print);
+    }
+    close(error_report[1]); // Closing of the error pipe, no more child process will be created from this point foward
+    // Pipe management
+    struct timeval time_out; // Structs required for pipe checking and game logic
     time_out.tv_sec = timeout;
     time_out.tv_usec = 0;
-    fd_set read_fds;
-    for(int i = 0; i<players_added; i++){
-        FD_ZERO(&read_fds);                                     //Setting up the pipe list for the select 
-        for(int j = 0; j <players_added; j++){                  //Fills up the pipe list
-            FD_SET(pipes[i][0],&read_fds);                      
-        }
-    int act = select(max_fd+1,&read_fds,NULL,NULL,&time_out);   //Select for each player (checking each player pipe)
-    if(act == -1){
-        perror("Error makeing the select");
-        return 1;
+    bool all_blocked = false;
+    bool game_ended = false;
+
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = delay * 1000000L; // 1 millisecond = 1,000,000 nanoseconds
+    // Pre game
+    if (!invalid_input)
+    {
+        system("clear");
     }
-    else if(act == 0){
-        printf("Timeout\n");
+    // Game Cycle
+    if (view != NULL && !invalid_input)
+    {
+        sem_post(&sync_map->to_print); // Initial image
+        sem_wait(&sync_map->end_print);
     }
-    else{
-        for(int i = 0; i<players_added; i++){
-            if(FD_ISSET(pipes[i][0],&read_fds)){                //Checks if the i-player has written something on his pipe
-                char buffer[512] = {0};
-                int readed = read(pipes[i][0],buffer,sizeof(buffer));
-                if(readed < 0){
-                    perror("Error reading the buffer\n");
-                }
-                else{
-                printf("Readed:%s, From child N: %d\n",buffer,i+1);
-                }
+
+    while (!game_ended && !invalid_input)
+    {
+        nanosleep(&ts, NULL); // Short delay
+
+        Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
+
+        sem_wait(&sync_map->master_mutex);
+        sem_wait(&sync_map->state_mutex);
+        sem_post(&sync_map->master_mutex);
+
+        if (request.player_num != -1)
+        {
+            if (processRequest(request, state_map) != 0)
+            {
+                state_map->players_list[request.player_num].invalid_moves++;
+            }
+            else
+            {
+                state_map->players_list[request.player_num].valid_moves++;
             }
         }
+        else if (request.player_num == -2)
+        {
+            // Timeout: no players answered
+            game_ended = true;
+        }
+
+        // Checking if players are blocked
+
+        if (view != NULL)
+        {
+            sem_post(&sync_map->to_print);
+            sem_wait(&sync_map->end_print);
+        }
+
+        sem_post(&sync_map->state_mutex);
+        all_blocked = true;
+        for (int player = 0; player < players_added; player++)
+        {
+            isBlocked(state_map, player);
+            if (!state_map->players_list[player].is_blocked)
+            {
+                all_blocked = false;
+            }
+        }
+        if (all_blocked)
+        {
+            game_ended = true;
+            state_map->game_ended = true;
+        }
     }
-}
 
-    //Cleaning
-
-    for(int i = 0; i < players_added; i++){                     //Waits for the players and view to finish
-        wait(NULL);
+    if (view != NULL && !invalid_input)
+    {
+        sem_wait(&sync_map->state_mutex); // So view can exit properly
+        sem_post(&sync_map->state_mutex);
+        sem_post(&sync_map->to_print);
+        sem_wait(&sync_map->end_print);
+    }
+    int status;
+    for (int i = 0; i < players_added; i++)
+    { // Waits for the players to end
+        wait(&status);
+        printf("Player %d, exited with status [%d] wth a score of %3d. ", i, status, state_map->players_list[i].score);
+        int valid = state_map->players_list[i].valid_moves;
+        int invalid = state_map->players_list[i].invalid_moves;
+        printf(" %2d moves, %2d valid, %2d invalid.\n", valid + invalid, valid, invalid);
+    }
+    if (view != NULL)
+    { // Waits for the view to end
+        wait(&status);
+        printf("View exited with status [%d]\n", status);
     }
 
-    clearMemory(state_map,sync_map,state_fd,sync_fd,width,height);  //Clears and closes the shared memory
+    // Cleaning
+
+    clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory
     return 0;
-}
-
-
-void semaphoreStary(GameSync *sync_map){
-    sem_init(&sync_map->A,0,1);
-    sem_init(&sync_map->B,0,1);
-    sem_init(&sync_map->C,1,1);
-    sem_init(&sync_map->D,1,1);
-    sem_init(&sync_map->E,1,1);
-    sync_map->F = 0;
-}
-
-
-
-void fillBoard(int width, int height, GameState *state_map) {
-    for(int i = 0; i < height; i++) {
-        for(int j = 0; j < width; j++) {
-           state_map->board_origin[i*width + j] = (rand() % 9) + 1; //para que quede entre 0 y 9
-        }
-    }
-}
-
-int randomInRange(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
-
-void createPlayers(GameState *state_map,int players_added,int width, int height, char **players, int (*pipes)[2]){                                       //Creo los players, Casteo medio feo pero funciona
-    
-    int start_pos[9][2] = {{1,1},{2,2},{3,3},{4,4},{5,5},{6,6},{7,7},{8,8},{9,9}};
-    char w[10];
-    char h[10];
-    sprintf(w,"%d",width);
-    sprintf(h,"%d",height);
-    
-    for(int i = 0; i<players_added;i++){
-        pid_t pid = fork();
-        if(pid < 0){
-            perror("Error creating child process\n");
-            exit(0);
-        }
-        if(pid == 0){
-            //Set player parameters
-            char * args_list[] = {players[i],w,h, NULL};
-            state_map->players_list[i].is_blocked = false;
-            strcpy(state_map->players_list[i].player_name, players[i]);
-            state_map->players_list[i].pos_x = start_pos[i][0];
-            state_map->players_list[i].pos_y = start_pos[i][1];
-            close(pipes[i][0]);         //The child ony writes on the pipe 
-            dup2(pipes[i][1],STDOUT_FILENO);    //Replace de stdout (fd: 1) wiith the created pipe 
-            execv(players[i],args_list);
-            perror("Player execv fail.\n");
-            exit(0);
-        }
-        close(pipes[i][1]);             //Close the witting endo of the pipe for the pearent
-        state_map->players_list[i].player_pid = pid;
-    }
 }

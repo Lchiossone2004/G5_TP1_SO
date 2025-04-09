@@ -28,12 +28,12 @@ typedef struct{
 }   GameState;
 
 typedef struct{
-    sem_t A;                        // Notify view there are changes to print
-    sem_t B;                        // Notify master that view has finished printing
-    sem_t C;                        // Mutex to prevent master blocking when accessing the state
-    sem_t D;                        // Mutex for the game state
-    sem_t E;                        // Mutex for the next variable
-    unsigned int F;                 // Number of players reading the state
+    sem_t to_print;                        // Notify view there are changes to print
+    sem_t end_print;                        // Notify master that view has finished printing
+    sem_t master_mutex;                        // Mutex to prevent master blocking when accessing the state
+    sem_t state_mutex;                        // Mutex for the game state
+    sem_t reader_mutex;                        // Mutex for the next variable
+    unsigned int readers_counter;                 // Number of players reading the state
 }   GameSync;
 
 #endif
