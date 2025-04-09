@@ -22,10 +22,13 @@ MASTER_SRC = $(SRC_DIR)/master.c $(SRC_DIR)/sharedMem.c $(SRC_DIR)/masterLib.c
 
 TBOT_SRC = $(SRC_DIR)/tbot.c $(SRC_DIR)/sharedMem.c
 
-# Default number of bots to 1
+# Default values
 BOTS ?= 1
-
-# Default view true
+WIDTH ?= 10
+HEIGHT ?= 10
+DELAY ?= 200
+TIMEOUT ?= 10
+#SEED?=
 VIEW_ON ?= yes
 
 # Default target to build bot and view
@@ -49,11 +52,11 @@ $(TBOT): $(TBOT_SRC)
 
 # Run the precompiled ChompChamps program with the specified number of bots
 run: $(BOT) $(VIEW)
-	./$(BIN_DIR)/ChompChamps -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
+	./$(BIN_DIR)/ChompChamps -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) ($-p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
 
 # Run the precompiled ChompChamps program with the specified number of bots
 run_nat: $(TBOT) $(VIEW)
-	./$(MAST) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
+	./$(MAST) -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
 
 # Clean up binary files
 clean:
