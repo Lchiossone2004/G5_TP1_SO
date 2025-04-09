@@ -3,97 +3,13 @@
 
 int main(int argc, char *argv[])
 {
-    int opt;
-    int width = 10;
-    int height = 10;
-    int delay = 200;
-    int timeout = 10;
-    int seed = time(NULL);
-    char *view = NULL;
+    int current_player=0;
+    int width, height, delay, timeout, seed;
+    char *view;
     char *players[9] = {NULL};
-    int current_player = 0;
     int players_added = 0;
-    while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1)
-    {
-        switch (opt)
-        {
-        case 'p':
-            if (!optarg || optarg[0] == '-')
-            {
-                perror("Must add player.");
-                exit(EXIT_FAILURE);
-            }
-            players[players_added++] = optarg;
-            printf("Player added: %s\n", optarg);
-            while (optind < argc && argv[optind][0] != '-')
-            {
-                players[players_added++] = argv[optind++];
-                printf("Player added: %s\n", players[players_added - 1]);
-            }
-            break;
-        case 'w':
-            width = atoi(optarg);
-            if (width < 10)
-            {
-                perror("Invalid width value, must be higher than 9.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 'h':
-            height = atoi(optarg);
-            if (height < 10)
-            {
-                perror("Invalid height value, must be higher than 9.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 'd':
-            delay = atoi(optarg);
-            if (delay < 0)
-            {
-                perror("Invalid delay value, must be positive.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 't':
-            timeout = atoi(optarg);
-            if (timeout < 10)
-            {
-                perror("Invalid timeout value, must be higher than 9.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 's':
-            seed = atoi(optarg);
-            break;
-        case 'v':
-            view = optarg;
-            break;
-        case '?':
-            if (optopt == 'p' || optopt == 'w' || optopt == 'h' || optopt == 'd' || optopt == 't' || optopt == 's' || optopt == 'v')
-            {
-                fprintf(stderr, "Error: Option -%c requires a value.\n", optopt);
-            }
-            else
-            {
-                perror("Error: Invalid argument");
-            }
-            exit(EXIT_FAILURE);
-        default:
-            fprintf(stderr, "Error inesperado.\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    if (players_added == 0)
-    {
-        perror("Error: At least one player must be specified using -p.\n");
-        exit(EXIT_FAILURE);
-    }
-    if (players_added > 9)
-    {
-        perror("Error: At most 9 players can be specified using -p.\n");
-        exit(EXIT_FAILURE);
-    }
+
+    processArguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view, players, &players_added);
 
     // Creation of shared memory
 

@@ -1,5 +1,110 @@
 #include "masterLib.h"
 
+void processArguments(int argc, char *argv[], int *width, int *height, int *delay, int *timeout, int *seed, char **view, char **players, int *players_added)
+{
+    int opt;
+    *width = 10;
+    *height = 10;
+    *delay = 200;
+    *timeout = 10;
+    *seed = time(NULL);
+    *view = NULL;
+    *players_added = 0;
+
+    while ((opt = getopt(argc, argv, "p:w:h:d:t:s:v:")) != -1)
+    {
+        switch (opt)
+        {
+        case 'p':
+            if (!optarg || optarg[0] == '-')
+            {
+                fprintf(stderr, "Error: Must add player after -p.\n");
+                exit(EXIT_FAILURE);
+            }
+            players[*players_added] = optarg;
+            printf("Player added: %s\n", optarg);
+            (*players_added)++;
+            while (optind < argc && argv[optind][0] != '-' && *players_added < 9)
+            {
+                players[*players_added] = argv[optind++];
+                printf("Player added: %s\n", players[*players_added]);
+                (*players_added)++;
+            }
+            break;
+
+        case 'w':
+            *width = atoi(optarg);
+            if (*width < 10)
+            {
+                fprintf(stderr, "Invalid width value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 'h':
+            *height = atoi(optarg);
+            if (*height < 10)
+            {
+                fprintf(stderr, "Invalid height value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 'd':
+            *delay = atoi(optarg);
+            if (*delay < 0)
+            {
+                fprintf(stderr, "Invalid delay value, must be positive.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 't':
+            *timeout = atoi(optarg);
+            if (*timeout < 10)
+            {
+                fprintf(stderr, "Invalid timeout value, must be higher than 9.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+
+        case 's':
+            *seed = atoi(optarg);
+            break;
+
+        case 'v':
+            *view = optarg;
+            break;
+
+        case '?':
+            if (optopt == 'p' || optopt == 'w' || optopt == 'h' || optopt == 'd' || optopt == 't' || optopt == 's' || optopt == 'v')
+            {
+                fprintf(stderr, "Error: Option -%c requires a value.\n", optopt);
+            }
+            else
+            {
+                fprintf(stderr, "Error: Invalid argument.\n");
+            }
+            exit(EXIT_FAILURE);
+        default:
+            fprintf(stderr, "Unexpected error while parsing arguments.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (*players_added == 0)
+    {
+        fprintf(stderr, "Error: At least one player must be specified using -p.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (*players_added > 9)
+    {
+        fprintf(stderr, "Error: At most 9 players can be specified using -p.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void isBlocked(GameState *state_map, int player_number)
 {
     state_map->players_list[player_number].is_blocked = true;
