@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     {
         clearScreen();
         sem_wait(&sync_map->to_print); // Tells master it is going to print
-        printf("\t\t\t| CHOMPS CHAMPS |\n");
+        printf("\t\t\t| CHOMP CHAMPS |\n");
         printf("\t\t\t-----------------\n");
 
         for (int row = -1; row < height; row++)
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
             { // Columns
                 if (row == -1)
                 {
-                    printf(" H:%-2d ", col + 1);
+                    printf(" C:%-2d ", col + 1);
                 }
                 else
                 {

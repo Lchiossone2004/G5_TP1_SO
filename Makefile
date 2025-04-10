@@ -28,7 +28,7 @@ WIDTH ?= 10
 HEIGHT ?= 10
 DELAY ?= 200
 TIMEOUT ?= 10
-#SEED?=
+SEED?=
 VIEW_ON ?= yes
 
 # Default target to build bot and view
@@ -52,11 +52,13 @@ $(TBOT): $(TBOT_SRC)
 
 # Run the precompiled ChompChamps program with the specified number of bots
 run: $(BOT) $(VIEW)
-	./$(BIN_DIR)/ChompChamps -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) ($-p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
+	./$(BIN_DIR)/ChompChamps -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) ($-p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW)) \
+		$(if $(SEED),-s $(SEED))
 
 # Run the precompiled ChompChamps program with the specified number of bots
 run_nat: $(TBOT) $(VIEW)
-	./$(MAST) -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW))
+	./$(MAST) -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW)) \
+		$(if $(SEED),-s $(SEED))
 
 # Clean up binary files
 clean:
