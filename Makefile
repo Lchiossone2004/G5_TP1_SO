@@ -62,7 +62,8 @@ run_nat:
 
 # Clean up binary files
 clean:
-	rm -f $(BOT) $(VIEW) $(MAST) ./test/test_report.txt
+	rm -f $(BOT) $(VIEW) $(MAST) ./test/test_report.txt 
+	rm -rf ./test/test_logs/*
 
 # Builds, runs, and cleans the project with the original master
 all: build run clean
