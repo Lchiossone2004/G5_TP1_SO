@@ -1,0 +1,7 @@
+🧪 Reporte de tests
+===================
+
+Ejecutar tests Catedra
+❌ Test Catedra 1 (make run por defecto) FALLÓ
+🛑 Código de salida: 141 (esperado 0)
+🔻 Últimas líneas del error:

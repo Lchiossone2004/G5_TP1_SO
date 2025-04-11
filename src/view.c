@@ -7,13 +7,6 @@
 
 void clearScreen(); // Cleans the screen
 
-void handle_resize(int sig)
-{
-    struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    system("clear");
-}
-
 int main(int argc, char *argv[])
 {
     int width = atoi(argv[1]);  // Playing board width
@@ -26,30 +19,28 @@ int main(int argc, char *argv[])
     openMemory(&state_fd, &sync_fd, &state_map, &sync_map, width, height);
 
     const char *colors[] = {
-        "\033[48;2;48;93;114m",   
-        "\033[48;2;104;165;184m", 
-        "\033[48;2;142;209;178m", 
-        "\033[48;2;237;187;153m", 
-        "\033[48;2;244;223;125m", 
-        "\033[48;2;222;142;174m", 
-        "\033[48;2;186;133;206m", 
-        "\033[48;2;255;166;158m", 
-        "\033[48;2;112;176;190m"  
-    };
+        "\033[48;2;48;93;114m",
+        "\033[48;2;104;165;184m",
+        "\033[48;2;142;209;178m",
+        "\033[48;2;237;187;153m",
+        "\033[48;2;244;223;125m",
+        "\033[48;2;222;142;174m",
+        "\033[48;2;186;133;206m",
+        "\033[48;2;255;166;158m",
+        "\033[48;2;112;176;190m"};
     const char *head_colors[] = {
-        "\033[48;2;38;73;91m",  
-        "\033[48;2;83;132;147m",  
-        "\033[48;2;113;167;142m", 
-        "\033[48;2;189;150;122m", 
-        "\033[48;2;195;178;100m", 
-        "\033[48;2;178;114;139m", 
+        "\033[48;2;38;73;91m",
+        "\033[48;2;83;132;147m",
+        "\033[48;2;113;167;142m",
+        "\033[48;2;189;150;122m",
+        "\033[48;2;195;178;100m",
+        "\033[48;2;178;114;139m",
         "\033[48;2;149;106;165m",
-        "\033[48;2;204;133;126m", 
+        "\033[48;2;204;133;126m",
         "\033[48;2;89;141;152m"};
     const char *board_colors[] = {
-        "\033[48;2;220;224;193m", 
-        "\033[48;2;178;190;181m" 
-    };
+        "\033[48;2;220;224;193m",
+        "\033[48;2;178;190;181m"};
 
     int position_value = 0; // To store what is in the cell
     int player_found = 0;   // If the player to be printed is found
@@ -112,11 +103,10 @@ int main(int argc, char *argv[])
             printf("%s  \x1b[0m ", colors[i]);                                  // Prints the color of the player
             printf("Player: %-16s | ", state_map->players_list[i].player_name); // Prints player's name
             printf("Score: %3d | ", state_map->players_list[i].score);          // Prints player's score
-            printf("Coordinates(x,y): (%d,%d) | ", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
+            printf("Coordinates(x,y): (%-2d;%2d) | ", state_map->players_list[i].pos_x, state_map->players_list[i].pos_y);
             printf("%s\n", state_map->players_list[i].is_blocked ? "is blocked" : "");
         }
         sem_post(&sync_map->end_print); // Tells master it finished printing
-        signal(SIGWINCH, handle_resize);
     }
 
     closeMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Cleaning

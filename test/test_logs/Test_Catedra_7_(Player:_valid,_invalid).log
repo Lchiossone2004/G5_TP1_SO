@@ -1,0 +1,10 @@
+[H[2J[3JPlayer execv fail: No such file or directory
+Player added: ./binaries/bot
+Player added: asda
+Bord--> Width: 10 | Height: 10
+Game Settings--> Delay: 200 | Seed: 1744337351 | View (null)
+Number of players--> 2
+Player: ./binaries/bot
+Player: asda
+Player 0, exited with status [256] wth a score of   0.   0 moves,  0 valid,  0 invalid.
+Player 1, exited with status [0] wth a score of   0.   0 moves,  0 valid,  0 invalid.
