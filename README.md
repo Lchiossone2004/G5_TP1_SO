@@ -33,16 +33,18 @@ By default there will be one bot from binaries/bot and visualization enabled.
 
 To customize this:
 ```bash
-make run BOTS=? VIEW_ON= (yes/no). Being ? the quantity of bots, must be lower than 10 (ten) and higher than 0 (cero).
+make run BOTS=? VIEW_ON= (yes/no)
 ```
+Being ? the quantity of bots, must be lower than 10 (ten) and higher than 0 (cero).
 In order to run master:
 ```bash
 make run_nat
 ```
 To customize:
 ```bash
-make run_nat BOTS=? VIEW_ON= (yes/no). Being ? the quantity of bots, must be lower than 10 (ten) and higher than 0 (cero).
+make run_nat BOTS=? VIEW_ON= (yes/no)
 ```
+Being ? the quantity of bots, must be lower than 10 (ten) and higher than 0 (cero).
 ## Cleaning
 
 In order to remove all compiled binaries:
