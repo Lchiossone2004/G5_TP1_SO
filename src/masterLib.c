@@ -212,7 +212,7 @@ void fillBoard(int width, int height, GameState *state_map)
 
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2])
 {
-    int start_pos[9][2] = {{1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 7}, {8, 8}, {9, 9}}; // Initial positions
+    int start_pos[9][2] = {{8, 5}, {8, 7}, {6, 8}, {3, 8}, {2, 6}, {2, 4}, {3, 2}, {6, 2}, {8, 3}}; // Initial positions
     char w[10];
     char h[10];
 
