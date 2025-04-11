@@ -51,18 +51,19 @@ $(TBOT): $(TBOT_SRC)
 	$(CC) $(CFLAGS) $^ -o $@
 
 # Run the precompiled ChompChamps program with the specified number of bots
-run: $(BOT) $(VIEW)
-	./$(BIN_DIR)/ChompChamps -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) ($-p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW)) \
+run:
+	./$(BIN_DIR)/ChompChamps -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW)) \
 		$(if $(SEED),-s $(SEED))
 
 # Run the precompiled ChompChamps program with the specified number of bots
-run_nat: $(TBOT) $(VIEW)
+run_nat:
 	./$(MAST) -w $(WIDTH) -h $(HEIGHT) -d $(DELAY) -t $(TIMEOUT) -p $(foreach n, $(shell seq 1 $(BOTS)), $(BOT)) $(if $(filter yes,$(VIEW_ON)),-v $(VIEW)) \
 		$(if $(SEED),-s $(SEED))
 
 # Clean up binary files
 clean:
-	rm -f $(BOT) $(VIEW) $(MAST) $(TBOT)
+	rm -f $(BOT) $(VIEW) $(MAST) ./test/test_report.txt 
+	rm -rf ./test/test_logs/*
 
 # Builds, runs, and cleans the project with the original master
 all: build run clean

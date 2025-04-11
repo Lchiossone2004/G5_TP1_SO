@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    int current_player=0;
+    int current_player = 0;
     int width, height, delay, timeout, seed;
     char *view;
     char *players[9] = {NULL};
@@ -208,5 +208,10 @@ int main(int argc, char *argv[])
     // Cleaning
 
     clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory
+    if (invalid_input)
+    {
+        perror("Invalid input.");
+        exit(EXIT_FAILURE);
+    }
     return 0;
 }
