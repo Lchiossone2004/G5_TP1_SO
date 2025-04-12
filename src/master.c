@@ -204,7 +204,10 @@ int main(int argc, char *argv[])
         wait(&status);
         printf("View exited with status [%d]\n", status);
     }
-
+    if (!invalid_input)
+    {
+        printWinner(state_map, players_added);
+    }
     // Cleaning
 
     clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory

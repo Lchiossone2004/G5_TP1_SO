@@ -9,7 +9,7 @@ make build || { echo "Failed 'make build'"; exit 1; }
 
 # Report file
 REPORT_FILE="test/test_report.txt"
-echo "🧪 Test Report" > "$REPORT_FILE"
+echo "Test Report" > "$REPORT_FILE"
 echo "==============" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
@@ -59,31 +59,31 @@ run_test() {
 echo "Running Catedra tests" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
-run_test "Test Catedra 1 (default make run)" no make run
+run_test "Test Catedra 1 (default make run)" no make run VIEW_ON=yes
 
-run_test "Test Catedra 2 (8 bots, no view)" no make run BOTS=8 VIEW_ON=no
+run_test "Test Catedra 2 (8 bots, no view)" no make run BOTS=8 
 
-run_test "Test Catedra 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 12)" no make run BOTS=5 SEED=124234 DELAY=5 TIMEOUT=15 WIDTH=13 HEIGHT=12
+run_test "Test Catedra 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 12)" no make run BOTS=5 SEED=124234 DELAY=5 TIMEOUT=15 WIDTH=13 HEIGHT=12 VIEW_ON=yes
 
-run_test "Test Catedra 4 (9 BOTS, w = 15,  h = 15)" no make run BOTS=9 WIDTH=15 HEIGHT=15
+run_test "Test Catedra 4 (9 BOTS, w = 15,  h = 15)" no make run BOTS=9 WIDTH=15 HEIGHT=15 VIEW_ON=yes
 
-run_test "Test Catedra 5 (w=5, h=15)" yes make run WIDTH=5 HEIGHT=15
+run_test "Test Catedra 5 (w=5, h=15)" yes make run WIDTH=5 HEIGHT=15 VIEW_ON=yes
 
 echo "All Catedra tests passed successfully." >> "$REPORT_FILE"
 echo "-------------------------------" >> "$REPORT_FILE"
 
-echo "Running Students' tests" >> "$REPORT_FILE"
+echo "Running Student tests" >> "$REPORT_FILE"
 echo "" >> "$REPORT_FILE"
 
-run_test "Test Student 1 (default make run)" no make run_nat
+run_test "Test Student 1 (default make run)" no make run_nat VIEW_ON=yes
 
-run_test "Test Student 2 (8 bots, no view)" no make run_nat BOTS=8 VIEW_ON=no
+run_test "Test Student 2 (8 bots, no view)" no make run_nat BOTS=8
 
-run_test "Test Student 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 30)" no make run_nat BOTS=5 SEED=124234 DELAY=10 TIMEOUT=15 WIDTH=13 HEIGHT=12
+run_test "Test Student 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 30)" no make run_nat BOTS=5 SEED=124234 DELAY=100 TIMEOUT=15 WIDTH=13 HEIGHT=12 VIEW_ON=yes
 
-run_test "Test Student 4 (9 BOTS, w = 15,  h = 15)" no make run_nat BOTS=9 WIDTH=15 HEIGHT=15
+run_test "Test Student 4 (9 BOTS, w = 15,  h = 15)" no make run_nat BOTS=9 WIDTH=15 HEIGHT=15 VIEW_ON=yes
 
-run_test "Test Catedra 5 (w=5, h=15)" yes make run_nat WIDTH=5 HEIGHT=15
+run_test "Test Catedra 5 (w=5, h=15)" yes make run_nat WIDTH=5 HEIGHT=15 VIEW_ON=yes
 
 run_test "Test Catedra 6 (Player: invalid)" yes ./binaries/master -p asdas
 

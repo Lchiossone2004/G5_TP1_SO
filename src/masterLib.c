@@ -210,22 +210,18 @@ void fillBoard(int width, int height, GameState *state_map)
     }
 }
 
-
-void mapPositions(int x_orig, int y_orig, int r_orig, int c_orig, int r_new, int c_new, int *x_new, int *y_new) {
+void mapPositions(int x_orig, int y_orig, int r_orig, int c_orig, int r_new, int c_new, int *x_new, int *y_new)
+{
     *x_new = (x_orig * c_new) / c_orig;
     *y_new = (y_orig * r_new) / r_orig;
 }
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2])
 {
-     int start_pos[9][2] = {
-        {8, 5}, {8, 7}, {6, 8}, {3, 8}, {2, 6},
-        {2, 4}, {3, 2}, {6, 2}, {8, 3}
-    };
+    int start_pos[9][2] = {
+        {8, 5}, {8, 7}, {6, 8}, {3, 8}, {2, 6}, {2, 4}, {3, 2}, {6, 2}, {8, 3}};
 
-    
     int r_orig = 10, c_orig = 10;
     int r_new = height, c_new = width;
-    
 
     int x_new, y_new;
 
@@ -237,7 +233,7 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
 
     for (int i = 0; i < players_added; i++)
     {
-         
+
         pid_t pid = fork();
 
         if (pid < 0)
@@ -275,4 +271,24 @@ int isValid(int y, int x, GameState *state_map)
 {
     return x >= 0 && x < state_map->board_width &&
            y >= 0 && y < state_map->board_height && state_map->board_origin[y * state_map->board_width + x] > 0;
+}
+
+void printWinner(GameState *state_map, int players_added)
+{
+    int winner = 0;
+    for (int i = 0; i < players_added; i++)
+    {
+        if (state_map->players_list[i].score > state_map->players_list[winner].score)
+        {
+            winner = i;
+        }
+        else if (state_map->players_list[i].score == state_map->players_list[winner].score)
+        {
+            if (state_map->players_list[i].valid_moves < state_map->players_list[winner].valid_moves)
+            {
+                winner = i;
+            }
+        }
+    }
+    printf("THE WINNER IS PLAYER (%d): %s\n", winner, state_map->players_list[winner].player_name);
 }

@@ -13,14 +13,10 @@ VIEW = $(BIN_DIR)/view
 SHM = sharedMem
 MAST = $(BIN_DIR)/master
 
-TBOT = $(BIN_DIR)/tbot
-
 # Source files for each program
 BOT_SRC = $(SRC_DIR)/bot.c $(SRC_DIR)/sharedMem.c
 VIEW_SRC = $(SRC_DIR)/view.c $(SRC_DIR)/sharedMem.c
 MASTER_SRC = $(SRC_DIR)/master.c $(SRC_DIR)/sharedMem.c $(SRC_DIR)/masterLib.c
-
-TBOT_SRC = $(SRC_DIR)/tbot.c $(SRC_DIR)/sharedMem.c
 
 # Default values
 BOTS ?= 1
@@ -29,10 +25,10 @@ HEIGHT ?= 10
 DELAY ?= 200
 TIMEOUT ?= 10
 SEED?=
-VIEW_ON ?= yes
+VIEW_ON ?= no
 
 # Default target to build bot and view
-build: $(BOT) $(VIEW) $(MAST) $(TBOT)
+build: $(BOT) $(VIEW) $(MAST)
 
 # Rule to build the bot binary
 $(BOT): $(BOT_SRC)
@@ -44,10 +40,6 @@ $(VIEW): $(VIEW_SRC)
 	
 # Rule to build the master binary
 $(MAST): $(MASTER_SRC)
-	$(CC) $(CFLAGS) $^ -o $@
-
-# Rule to build the view binary
-$(TBOT): $(TBOT_SRC)
 	$(CC) $(CFLAGS) $^ -o $@
 
 # Run the precompiled ChompChamps program with the specified number of bots
