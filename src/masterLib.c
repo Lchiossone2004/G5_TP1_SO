@@ -143,18 +143,24 @@ int processRequest(Request request, GameState *state_map)
 }
 
 Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2], int max_fd, int *current_player)
-{ // Checks pipes and looks for requests (aca es donde falta el tema de un orden justo)
+{ // Checks pipes and looks for requests 
     Request request = {.direction = -1, .player_num = -1};
     fd_set read_fds;
     FD_ZERO(&read_fds); // Setting up the pipe list for the select
     for (int i = 0; i < players_added; i++)
     { // Add only if file descriptor is open
-        FD_SET(pipes[i][0], &read_fds);
+         if (pipes[i][0] != -1) {
+        FD_SET(pipes[i][0], &read_fds);  // Agregar descriptor de lectura al conjunto
+        if (pipes[i][0] > max_fd) {
+            max_fd = pipes[i][0];  // Actualizar el valor de max_fd si encontramos un descriptor más alto
+        }
+         }
     }
     int act = select(max_fd + 1, &read_fds, NULL, NULL, &time_out); // Select for each player (checking each player pipe)
+    
     if (act == -1)
     {
-        perror("Error makeing the select");
+        perror("Error making the select");
         exit(EXIT_FAILURE);
     }
     else if (act == 0)
@@ -185,6 +191,7 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
             }
         }
     }
+    
     *current_player = (*current_player + 1) % players_added; // Iteration of player (if last, goes back to first)
     return request;
 }

@@ -133,6 +133,7 @@ int main(int argc, char *argv[])
 
     while (!game_ended && !invalid_input)
     {
+       
         nanosleep(&ts, NULL); // Short delay
 
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
@@ -141,7 +142,13 @@ int main(int argc, char *argv[])
         sem_wait(&sync_map->state_mutex);
         sem_post(&sync_map->master_mutex);
 
-        if (request.player_num != -1)
+        if (request.player_num == -2)
+        {
+            // Timeout: no players answered
+            game_ended = true;
+            return 0;
+        }
+        else if (request.player_num != -1)
         {
             if (processRequest(request, state_map) != 0)
             {
@@ -152,11 +159,7 @@ int main(int argc, char *argv[])
                 state_map->players_list[request.player_num].valid_moves++;
             }
         }
-        else if (request.player_num == -2)
-        {
-            // Timeout: no players answered
-            game_ended = true;
-        }
+        
 
         // Checking if players are blocked
 
