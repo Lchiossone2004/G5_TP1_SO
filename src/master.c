@@ -146,6 +146,12 @@ int main(int argc, char *argv[])
         {
             // Timeout: no players answered
             game_ended = true;
+            clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory
+            if (invalid_input)
+            {
+                perror("Invalid input.");
+                exit(EXIT_FAILURE);
+            }
             return 0;
         }
         else if (request.player_num != -1)
