@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[])
 {
+    bool should_cleanup = true;
     int current_player = 0;
     int width, height, delay, timeout, seed;
     char *view;
@@ -141,15 +142,14 @@ int main(int argc, char *argv[])
         sem_wait(&sync_map->master_mutex);
         sem_wait(&sync_map->state_mutex);
         sem_post(&sync_map->master_mutex);
-
         if (request.player_num == -2)
         {
             // Timeout: no players answered
             game_ended = true;
-            clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory
             if (invalid_input)
             {
                 perror("Invalid input.");
+                should_cleanup = false;
                 exit(EXIT_FAILURE);
             }
             return 0;
@@ -218,8 +218,9 @@ int main(int argc, char *argv[])
         printWinner(state_map, players_added);
     }
     // Cleaning
-
-    clearMemory(state_map, sync_map, state_fd, sync_fd, width, height); // Clears and closes the shared memory
+    if (should_cleanup) {
+        clearMemory(state_map, sync_map, state_fd, sync_fd, width, height);
+    }
     if (invalid_input)
     {
         perror("Invalid input.");
