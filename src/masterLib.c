@@ -210,9 +210,25 @@ void fillBoard(int width, int height, GameState *state_map)
     }
 }
 
+
+void mapPositions(int x_orig, int y_orig, int r_orig, int c_orig, int r_new, int c_new, int *x_new, int *y_new) {
+    *x_new = (x_orig * c_new) / c_orig;
+    *y_new = (y_orig * r_new) / r_orig;
+}
 void createPlayers(GameState *state_map, int players_added, int width, int height, char **players, int (*pipes)[2], int error_report[2])
 {
-    int start_pos[9][2] = {{8, 5}, {8, 7}, {6, 8}, {3, 8}, {2, 6}, {2, 4}, {3, 2}, {6, 2}, {8, 3}}; // Initial positions
+     int start_pos[9][2] = {
+        {8, 5}, {8, 7}, {6, 8}, {3, 8}, {2, 6},
+        {2, 4}, {3, 2}, {6, 2}, {8, 3}
+    };
+
+    
+    int r_orig = 10, c_orig = 10;
+    int r_new = height, c_new = width;
+    
+
+    int x_new, y_new;
+
     char w[10];
     char h[10];
 
@@ -221,6 +237,7 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
 
     for (int i = 0; i < players_added; i++)
     {
+         
         pid_t pid = fork();
 
         if (pid < 0)
@@ -232,13 +249,14 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
         if (pid == 0)
         { // Child process
             close(error_report[0]);
+            mapPositions(start_pos[i][0], start_pos[i][1], r_orig, c_orig, r_new, c_new, &x_new, &y_new);
             // Player's parameters
             char *args_list[] = {players[i], w, h, NULL};
             state_map->players_list[i].is_blocked = false;
             strcpy(state_map->players_list[i].player_name, players[i]);
-            int x = state_map->players_list[i].pos_x = start_pos[i][0];
-            int y = state_map->players_list[i].pos_y = start_pos[i][1];
-            state_map->board_origin[state_map->board_width * y + x] = i * (-1);
+            state_map->players_list[i].pos_x = x_new;
+            state_map->players_list[i].pos_y = y_new;
+            state_map->board_origin[state_map->board_width * y_new + x_new] = i * (-1);
             state_map->players_list[i].score = 0;
             close(pipes[i][0]);
             dup2(pipes[i][1], STDOUT_FILENO); // Redirect standard output to pipe
