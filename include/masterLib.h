@@ -30,5 +30,6 @@ int processRequest(Request request, GameState *state_map);
 int isValid(int y, int x, GameState *state_map);
 void isBlocked(GameState *state_map, int player_number);
 void printWinner(GameState *state_map, int players_added);
+void cleanSemaphores(GameSync *sync_map);
 
 #endif

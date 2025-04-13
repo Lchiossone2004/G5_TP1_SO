@@ -3,12 +3,12 @@
 
 int main(int argc, char *argv[])
 {
-    bool should_cleanup = true;
     int current_player = 0;
     int width, height, delay, timeout, seed;
     char *view;
     char *players[9] = {NULL};
     int players_added = 0;
+    bool timeout_exit = false;
 
     processArguments(argc, argv, &width, &height, &delay, &timeout, &seed, &view, players, &players_added);
 
@@ -60,6 +60,8 @@ int main(int argc, char *argv[])
     if (pipe(error_report) == -1)
     {
         perror("Error creating error_report pipe\n");
+        cleanSemaphores(sync_map);
+        clearMemory(state_map, sync_map, state_fd, sync_fd, width, height);
         exit(EXIT_FAILURE);
     }
 
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
 
     while (!game_ended && !invalid_input)
     {
-       
+
         nanosleep(&ts, NULL); // Short delay
 
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
@@ -146,13 +148,8 @@ int main(int argc, char *argv[])
         {
             // Timeout: no players answered
             game_ended = true;
-            if (invalid_input)
-            {
-                perror("Invalid input.");
-                should_cleanup = false;
-                exit(EXIT_FAILURE);
-            }
-            return 0;
+            state_map->game_ended = true;
+            timeout_exit = true;
         }
         else if (request.player_num != -1)
         {
@@ -165,7 +162,6 @@ int main(int argc, char *argv[])
                 state_map->players_list[request.player_num].valid_moves++;
             }
         }
-        
 
         // Checking if players are blocked
 
@@ -176,6 +172,7 @@ int main(int argc, char *argv[])
         }
 
         sem_post(&sync_map->state_mutex);
+
         all_blocked = true;
         for (int player = 0; player < players_added; player++)
         {
@@ -191,13 +188,20 @@ int main(int argc, char *argv[])
             state_map->game_ended = true;
         }
     }
-
-    if (view != NULL && !invalid_input)
+    if (view != NULL && !invalid_input && !timeout_exit)
     {
         sem_wait(&sync_map->state_mutex); // So view can exit properly
         sem_post(&sync_map->state_mutex);
         sem_post(&sync_map->to_print);
         sem_wait(&sync_map->end_print);
+    }
+    if (timeout_exit)
+    {
+        printf("[Exited by timeout]\n");
+    }
+    else
+    {
+        printf("[Exited by blocking]\n");
     }
     int status;
     for (int i = 0; i < players_added; i++)
@@ -217,10 +221,8 @@ int main(int argc, char *argv[])
     {
         printWinner(state_map, players_added);
     }
-    // Cleaning
-    if (should_cleanup) {
-        clearMemory(state_map, sync_map, state_fd, sync_fd, width, height);
-    }
+    cleanSemaphores(sync_map);
+    clearMemory(state_map, sync_map, state_fd, sync_fd, width, height);
     if (invalid_input)
     {
         perror("Invalid input.");

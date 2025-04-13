@@ -143,21 +143,23 @@ int processRequest(Request request, GameState *state_map)
 }
 
 Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2], int max_fd, int *current_player)
-{ // Checks pipes and looks for requests 
+{ // Checks pipes and looks for requests
     Request request = {.direction = -1, .player_num = -1};
     fd_set read_fds;
     FD_ZERO(&read_fds); // Setting up the pipe list for the select
     for (int i = 0; i < players_added; i++)
     { // Add only if file descriptor is open
-         if (pipes[i][0] != -1) {
-        FD_SET(pipes[i][0], &read_fds);  // Agregar descriptor de lectura al conjunto
-        if (pipes[i][0] > max_fd) {
-            max_fd = pipes[i][0];  // Actualizar el valor de max_fd si encontramos un descriptor más alto
+        if (pipes[i][0] != -1)
+        {
+            FD_SET(pipes[i][0], &read_fds); // Agregar descriptor de lectura al conjunto
+            if (pipes[i][0] > max_fd)
+            {
+                max_fd = pipes[i][0]; // Actualizar el valor de max_fd si encontramos un descriptor más alto
+            }
         }
-         }
     }
     int act = select(max_fd + 1, &read_fds, NULL, NULL, &time_out); // Select for each player (checking each player pipe)
-    
+
     if (act == -1)
     {
         perror("Error making the select");
@@ -167,7 +169,6 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
     {
         request.direction = -2;
         request.player_num = -2;
-        printf("Timeout\n");
         return request;
     }
     else
@@ -191,7 +192,7 @@ Request checkRequest(struct timeval time_out, int players_added, int (*pipes)[2]
             }
         }
     }
-    
+
     *current_player = (*current_player + 1) % players_added; // Iteration of player (if last, goes back to first)
     return request;
 }
@@ -298,4 +299,13 @@ void printWinner(GameState *state_map, int players_added)
         }
     }
     printf("THE WINNER IS PLAYER (%d): %s\n", winner, state_map->players_list[winner].player_name);
+}
+
+void cleanSemaphores(GameSync *sync_map)
+{
+    sem_destroy(&sync_map->end_print);
+    sem_destroy(&sync_map->master_mutex);
+    sem_destroy(&sync_map->reader_mutex);
+    sem_destroy(&sync_map->state_mutex);
+    sem_destroy(&sync_map->to_print);
 }

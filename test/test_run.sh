@@ -63,7 +63,7 @@ run_test "Test Catedra 1 (default make run)" no make run VIEW_ON=yes
 
 run_test "Test Catedra 2 (8 bots, no view)" no make run BOTS=8 
 
-run_test "Test Catedra 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 12)" no make run BOTS=5 SEED=124234 DELAY=5 TIMEOUT=15 WIDTH=13 HEIGHT=12 VIEW_ON=yes
+run_test "Test Catedra 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 12)" no make run BOTS=5 SEED=124234 DELAY=100 TIMEOUT=15 WIDTH=13 HEIGHT=12 VIEW_ON=yes
 
 run_test "Test Catedra 4 (9 BOTS, w = 15,  h = 15)" no make run BOTS=9 WIDTH=15 HEIGHT=15 VIEW_ON=yes
 

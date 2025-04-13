@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
             sem_post(&sync_map->state_mutex); // If he is the last one it frees the game state
         }
         sem_post(&sync_map->reader_mutex); // Frees other bots
-        sem_post(&sync_map->master_mutex); // Frees the master
+        // sem_post(&sync_map->master_mutex); // Frees the master
+
         if (write(1, &direction, sizeof(direction)) == -1)
         { // Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
