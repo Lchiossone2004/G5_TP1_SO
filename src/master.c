@@ -87,7 +87,13 @@ int main(int argc, char *argv[])
         }
         else if (pid == 0)
         {
+            for (int j = 0; j < players_added; j++)
+            {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
             close(error_report[0]);
+            close(error_report[1]);
             execv(view, args_list);
             perror("View execv fail");
             int error = -1;

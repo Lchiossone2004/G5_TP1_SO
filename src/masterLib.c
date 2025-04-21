@@ -252,7 +252,17 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
 
         if (pid == 0)
         { // Child process
+            for (int j = 0; j < players_added; j++)
+            {
+                if (j != i)
+                {
+                    close(pipes[j][0]);
+                    close(pipes[j][1]);
+                }
+            }
             close(error_report[0]);
+            close(error_report[1]);
+
             mapPositions(start_pos[i][0], start_pos[i][1], r_orig, c_orig, r_new, c_new, &x_new, &y_new);
             // Player's parameters
             char *args_list[] = {players[i], w, h, NULL};
@@ -264,7 +274,8 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
             state_map->players_list[i].score = 0;
             close(pipes[i][0]);
             dup2(pipes[i][1], STDOUT_FILENO); // Redirect standard output to pipe
-            execv(players[i], args_list);     // Call child's file
+            close(pipes[i][1]);
+            execv(players[i], args_list); // Call child's file
             perror("Player execv fail");
             int error = -1;
             write(error_report[1], &error, sizeof(error));
