@@ -30,6 +30,8 @@ int main(int argc, char *argv[])
     }
 
     unsigned char direction;
+    int moved = 0; 
+    int checkMoved = 0;
     while (!state_map->players_list[playerNumber].is_blocked && !state_map->game_ended)
     {
         sem_wait(&sync_map->master_mutex); // Mutex of master
@@ -44,7 +46,7 @@ int main(int argc, char *argv[])
         sem_post(&sync_map->reader_mutex); // Frees other bots
 
         direction = CheckSurroundings(state_map, width, height, playerNumber);
-
+        checkMoved = state_map->players_list[playerNumber].invalid_moves + state_map->players_list[playerNumber].valid_moves;
         sem_wait(&sync_map->reader_mutex); // Mutex of other bots
         sync_map->readers_counter--;       // Substracs form the reader list
         if (sync_map->readers_counter == 0)
@@ -54,11 +56,13 @@ int main(int argc, char *argv[])
         sem_post(&sync_map->reader_mutex); // Frees other bots
         // sem_post(&sync_map->master_mutex); // Frees the master
 
+        if(moved <= checkMoved){
+            moved++;
         if (write(1, &direction, sizeof(direction)) == -1)
         { // Writes in the pipe o fd 1 (given by the master)
             perror("Failed to write on pipe 7\n");
         }
-        sleep(2);
+    }
     }
     closeMemory(state_map, sync_map, state_fd, sync_fd, width, height);
     close(1);

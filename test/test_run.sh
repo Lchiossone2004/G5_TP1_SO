@@ -1,4 +1,4 @@
-PROJECT_ROOT="test/.."
+PROJECT_ROOT="../"
 
 # Go to project root
 cd "$PROJECT_ROOT" || { echo "Could not access project root"; exit 1; }
