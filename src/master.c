@@ -176,8 +176,9 @@ int main(int argc, char *argv[])
             sem_post(&sync_map->to_print);
             sem_wait(&sync_map->end_print);
         }
-
-        sem_post(&sync_map->state_mutex);
+        else{
+            nanosleep(&ts, NULL); // Short delay
+        }
 
         all_blocked = true;
         for (int player = 0; player < players_added; player++)
@@ -193,6 +194,8 @@ int main(int argc, char *argv[])
             game_ended = true;
             state_map->game_ended = true;
         }
+        sem_post(&sync_map->state_mutex);
+
     }
     if (view != NULL && !invalid_input && !timeout_exit)
     {

@@ -58,11 +58,11 @@ int main(int argc, char *argv[])
 
         if(moved <= checkMoved){
             moved++;
-        if (write(1, &direction, sizeof(direction)) == -1)
-        { // Writes in the pipe o fd 1 (given by the master)
-            perror("Failed to write on pipe 7\n");
-        }
-    }
+            if (write(1, &direction, sizeof(direction)) == -1)
+            { // Writes in the pipe o fd 1 (given by the master)
+                perror("Failed to write on pipe 7\n");
+            }
+        }   
     }
     closeMemory(state_map, sync_map, state_fd, sync_fd, width, height);
     close(1);

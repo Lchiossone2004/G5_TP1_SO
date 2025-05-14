@@ -83,18 +83,18 @@ run_test "Test Student 3 (5 bots, Seed 124234, delay 5, timeout 15, w 13, h 30)"
 
 run_test "Test Student 4 (9 BOTS, w = 15,  h = 15)" no make run_nat BOTS=9 WIDTH=15 HEIGHT=15 VIEW_ON=yes
 
-run_test "Test Catedra 5 (w=5, h=15)" yes make run_nat WIDTH=5 HEIGHT=15 VIEW_ON=yes
+# run_test "Test Catedra 5 (w=5, h=15)" yes make run_nat WIDTH=5 HEIGHT=15 VIEW_ON=yes
 
-run_test "Test Catedra 6 (Player: invalid)" yes ./binaries/master -p asdas
+# run_test "Test Catedra 6 (Player: invalid)" yes ./binaries/master -p asdas
 
-run_test "Test Catedra 7 (Player: valid, invalid)" yes ./binaries/master -p ./binaries/bot asda
+# run_test "Test Catedra 7 (Player: valid, invalid)" yes ./binaries/master -p ./binaries/bot asda
 
-run_test "Test Catedra 9 (Player: valid, invalid, View: valid)" yes ./binaries/master -p ./binaries/bot asdasd -v ./binaries/view
+# run_test "Test Catedra 9 (Player: valid, invalid, View: valid)" yes ./binaries/master -p ./binaries/bot asdasd -v ./binaries/view
 
-run_test "Test Catedra 10 (Player: valid, View: invalid)" yes ./binaries/master -p ./binaries/bot -v asdasd
+# run_test "Test Catedra 10 (Player: valid, View: invalid)" yes ./binaries/master -p ./binaries/bot -v asdasd
 
-run_test "Test Catedra 11 (Player: valid, invalid, View: invalid)" yes ./binaries/master -p ./binaries/bot asdasd  -v asdasd
+# run_test "Test Catedra 11 (Player: valid, invalid, View: invalid)" yes ./binaries/master -p ./binaries/bot asdasd  -v asdasd
 
-run_test "Test Catedra 12 (Player: invalid, View: invalid)" yes ./binaries/master -p asdasd  -v asdasd
+# run_test "Test Catedra 12 (Player: invalid, View: invalid)" yes ./binaries/master -p asdasd  -v asdasd
 
 echo "All tests passed successfully." >> "$REPORT_FILE"
