@@ -141,10 +141,7 @@ int main(int argc, char *argv[])
     }
 
     while (!game_ended && !invalid_input)
-    {
-
-        nanosleep(&ts, NULL); // Short delay
-
+    {    
         Request request = checkRequest(time_out, players_added, pipes, max_fd, &current_player);
 
         sem_wait(&sync_map->master_mutex);
@@ -176,9 +173,6 @@ int main(int argc, char *argv[])
             sem_post(&sync_map->to_print);
             sem_wait(&sync_map->end_print);
         }
-        else{
-            nanosleep(&ts, NULL); // Short delay
-        }
 
         all_blocked = true;
         for (int player = 0; player < players_added; player++)
@@ -195,6 +189,7 @@ int main(int argc, char *argv[])
             state_map->game_ended = true;
         }
         sem_post(&sync_map->state_mutex);
+        nanosleep(&ts, NULL); // Short delay
 
     }
     if (view != NULL && !invalid_input && !timeout_exit)
