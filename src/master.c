@@ -189,7 +189,10 @@ int main(int argc, char *argv[])
             state_map->game_ended = true;
         }
         sem_post(&sync_map->state_mutex);
-        nanosleep(&ts, NULL); // Short delay
+        if (view != NULL)
+        {
+            nanosleep(&ts, NULL); // Short delay
+        }
 
     }
     if (view != NULL && !invalid_input && !timeout_exit)
