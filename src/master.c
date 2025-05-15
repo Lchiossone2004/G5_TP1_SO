@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     int current_player = 0;
     int width, height, delay, timeout, seed;
-    char *view;
+    char *view = NULL;
     char *players[9] = {NULL};
     int players_added = 0;
     bool timeout_exit = false;

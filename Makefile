@@ -58,6 +58,6 @@ clean:
 	rm -rf ./test/test_logs/*
 
 # Builds, runs, and cleans the project with the original master
-all: clean build run clean
+all: build run clean
 # Builds, runs, and cleans the project with our master
-all_nat: clean build run_nat clean
+all_nat: build run_nat clean
