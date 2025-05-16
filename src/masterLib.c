@@ -138,7 +138,7 @@ int processRequest(Request request, GameState *state_map)
     }
     else
     {
-        return 0;
+        return 1;
     }
 }
 
@@ -270,6 +270,8 @@ void createPlayers(GameState *state_map, int players_added, int width, int heigh
             strcpy(state_map->players_list[i].player_name, players[i]);
             state_map->players_list[i].pos_x = x_new;
             state_map->players_list[i].pos_y = y_new;
+            state_map->players_list[i].valid_moves = 0;
+            state_map->players_list[i].invalid_moves = 0;
             state_map->board_origin[state_map->board_width * y_new + x_new] = i * (-1);
             state_map->players_list[i].score = 0;
             close(pipes[i][0]);
